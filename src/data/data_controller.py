@@ -68,7 +68,7 @@ class DataController:
         """
         try:
             items = self._get_stream_keys_items[
-                stream, json.dumps(keys), json.dumps(verbose)].run(retcode = 0)
+                stream, json.dumps({"keys": keys}), json.dumps(verbose)].run(retcode = 0)
 
             return items[1].strip()
         except ProcessExecutionError as err:

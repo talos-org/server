@@ -64,9 +64,9 @@ class DataStreamController:
         try:
             output = self._subscribe_to_stream[
                 json.dumps(streams), json.dumps(rescan)].run(retcode=0)
-            return output[1].strip()
-
-            if output == 'null':
+            output = output[1].strip()
+            
+            if not output:
                 return True
             else:
                 return False
@@ -83,9 +83,9 @@ class DataStreamController:
         try:
             output = self._unsubscribe_from_stream[json.dumps(
                 streams)].run(retcode=0)
-            return output[1].strip()
+            output =  output[1].strip()
 
-            if output == 'null':
+            if not output:
                 return True
             else:
                 return False

@@ -35,7 +35,7 @@ class DataStreamController:
         """
         Returns information about streams created on the blockchain. Pass an array
         of stream name(s) to retrieve information about the stream(s), 
-        or * for all streams. Use count and start to retrieve part of the 
+        or use the default value for all streams. Use count and start to retrieve part of the 
         list only, with negative start values (like the default) indicating the most recently 
         created streams. Extra fields are shown for streams to which this node has subscribed.
         """
@@ -86,6 +86,25 @@ class DataStreamController:
             output =  output[1].strip()
 
             if not output:
+                return True
+            else:
+                return False
+        except ProcessExecutionError as err:
+            print(err.args[3])
+        except Exception as err:
+            print(err)
+    
+    def resubscribe(self, streams: list):
+        """
+        Instructs the node to start tracking one or more stream(s). 
+        These are specified using an array of one or more items. 
+        The node will reindex all items from when the streams 
+        were created, as well as those in other subscribed entities. 
+        Returns True if successful.
+        """
+        try:
+
+            if self.unsubscribe(streams) and self.subscribe(streams, True):
                 return True
             else:
                 return False

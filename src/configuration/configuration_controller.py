@@ -55,7 +55,6 @@ class ConfiguartionController:
             file = open(str(path), 'r')
             lines = file.readlines()
             file.close()
-
             file2 = open(str(path), 'w')
             for line in lines:
                 if (description is not None) & (self._chain_description in line):

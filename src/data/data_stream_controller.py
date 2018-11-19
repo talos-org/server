@@ -5,8 +5,8 @@ import json
 class DataStreamController:
     MAX_DATA_COUNT = 10
 
-    def __init__(self):
-        self._multichain = local['multichain-cli']['talos']
+    def __init__(self, blockchain_name: str):
+        self._multichain = local['multichain-cli'][blockchain_name]
         self._create = self._multichain['create']
         self._create_stream = self._create['stream']
         self._get_streams = self._multichain['liststreams']

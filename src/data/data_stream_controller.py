@@ -1,4 +1,5 @@
-from plumbum import local, FG, BG, TF, RETCODE, ProcessExecutionError
+from subprocess import run, CalledProcessError
+from shlex import quote
 import json
 
 
@@ -6,12 +7,13 @@ class DataStreamController:
     MAX_DATA_COUNT = 10
 
     def __init__(self, blockchain_name: str):
-        self._multichain = local['multichain-cli'][blockchain_name]
-        self._create = self._multichain['create']
-        self._create_stream = self._create['stream']
-        self._get_streams = self._multichain['liststreams']
-        self._subscribe_to_stream = self._multichain['subscribe']
-        self._unsubscribe_from_stream = self._multichain['unsubscribe']
+        self._multichain_arg = ['multichain-cli', quote(blockchain_name)]
+        self._create_arg = self._multichain_arg + ['create']
+        self._create_stream_arg = self._create_arg + ['stream']
+        self._get_streams_arg = self._multichain_arg + ['liststreams']
+        self._subscribe_to_stream_arg = self._multichain_arg + ['subscribe']
+        self._unsubscribe_from_stream_arg = self._multichain_arg + \
+            ['unsubscribe']
 
     def create_stream(self, name: str, isOpen: bool):
         """
@@ -22,12 +24,12 @@ class DataStreamController:
         Returns the txid of the transaction creating the stream.
         """
         try:
+            args = self._create_stream_arg + [quote(name), json.dumps(isOpen)]
+            output = run(args, check=True, capture_output=True)
 
-            output = self._create_stream[name, json.dumps(isOpen)].run(retcode=0)
-
-            return output[1].strip()
-        except ProcessExecutionError as err:
-            print(err.args[3])
+            return output.stdout.strip()
+        except CalledProcessError as err:
+            print(err.stderr)
         except Exception as err:
             print(err)
 
@@ -43,13 +45,12 @@ class DataStreamController:
             stream_selector = '*'
             if streams is not None:
                 stream_selector = json.dumps(streams)
-
-            streams = self._get_streams[stream_selector, json.dumps(
-                verbose), json.dumps(count), json.dumps(start)].run(retcode=0)
-
-            return streams[1].strip()
-        except ProcessExecutionError as err:
-            print(err.args[3])
+            args = self._get_streams_arg + [stream_selector, json.dumps(
+                verbose), json.dumps(count), json.dumps(start)]
+            streams = run(args, check=True, capture_output=True)
+            return json.loads(streams.stdout)
+        except CalledProcessError as err:
+            print(err.stderr)
         except Exception as err:
             print(err)
 
@@ -62,16 +63,15 @@ class DataStreamController:
         Returns True if successful.
         """
         try:
-            output = self._subscribe_to_stream[
-                json.dumps(streams), json.dumps(rescan)].run(retcode=0)
-            output = output[1].strip()
-            
-            if not output:
-                return True
-            else:
-                return False
-        except ProcessExecutionError as err:
-            print(err.args[3])
+            args = self._subscribe_to_stream_arg + \
+                [json.dumps(streams), json.dumps(rescan)]
+            output = run(args, check=True, capture_output=True)
+
+            # returns True if output is empty (meaning it was a success)
+            #
+            return not output.stdout.strip()
+        except CalledProcessError as err:
+            print(err.stderr)
         except Exception as err:
             print(err)
 
@@ -81,19 +81,17 @@ class DataStreamController:
         Streams are specified using an array of one ore more items.
         """
         try:
-            output = self._unsubscribe_from_stream[json.dumps(
-                streams)].run(retcode=0)
-            output =  output[1].strip()
+            args = self._unsubscribe_from_stream_arg + [json.dumps(streams)]
+            output = run(args, check=True, capture_output=True)
 
-            if not output:
-                return True
-            else:
-                return False
-        except ProcessExecutionError as err:
-            print(err.args[3])
+            # returns True if output is empty (meaning it was a success)
+            #
+            return not output.stdout.strip()
+        except CalledProcessError as err:
+            print(err.stderr)
         except Exception as err:
             print(err)
-    
+
     def resubscribe(self, streams: list):
         """
         Instructs the node to start tracking one or more stream(s). 
@@ -103,12 +101,8 @@ class DataStreamController:
         Returns True if successful.
         """
         try:
-
-            if self.unsubscribe(streams) and self.subscribe(streams, True):
-                return True
-            else:
-                return False
-        except ProcessExecutionError as err:
-            print(err.args[3])
+            return self.unsubscribe(streams) and self.subscribe(streams, True)
+        except CalledProcessError as err:
+            print(err.stderr)
         except Exception as err:
             print(err)

@@ -11,14 +11,14 @@ class ConfiguartionController:
         self._create = self._multichain_util_arg+['create']
         self._data_dir_arg = "-datadir="
         self._multichain_daemon = "-daemon"
-        self._multichain_path = "/.multichain/"
+        self._multichain_path = ".multichain/"
         self._params_file = "/params.dat"
         self._chain_description = "chain-description"
         self._max_block_size = "maximum-block-size"
         self._target_block_time = "target-block-time"
         self._mining_turnover = "mining-turnover"
         self._mining_diversity = "mining-diversity"
-        self._dummy_section = 'dummy_section'
+        self._default_install_path = '/usr/local/bin'
         self._params_path = self.validate_params_path(params_path)
         self._install_path = self.validate_install_path(install_path)
 
@@ -90,13 +90,13 @@ class ConfiguartionController:
         """
         if os.path.exists(path):
             return path
-        return str(Path.home())+self._multichain_path
-
+        return os.path.join(str(Path.home()),self._multichain_path)
     def validate_install_path(self,path):
         """
         Validates the the isntall path provided by the user
         :return: a valid path of install path of MultiChain
+        This is the default path of install which is generally used normal user programs that are not generally managed by the distribuation package manager
         """
         if os.path.exists(path):
             return path
-        return '/usr/local/bin'#This is the default path of install which is generally used normal user programs that are not generally managed by the distribuation package manager
+        return self._default_install_path

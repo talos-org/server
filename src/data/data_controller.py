@@ -26,7 +26,7 @@ class DataController:
         and data in JSON format.
         """
         try:
-            json_data = json.loads(quote(data))
+            json_data = json.loads(data)
             formatted_data = json.dumps({"json": json_data})
             args = self._publish_item_arg + \
                 [quote(stream), json.dumps(keys), formatted_data]
@@ -40,7 +40,7 @@ class DataController:
         except Exception as err:
             print(err)
 
-    def getItemsByKey(self, stream: str, key: str,  verbose: bool = False, count: int = MAX_DATA_COUNT, start: int = -MAX_DATA_COUNT, local_ordering: bool = False):
+    def get_items_by_key(self, stream: str, key: str,  verbose: bool = False, count: int = MAX_DATA_COUNT, start: int = -MAX_DATA_COUNT, local_ordering: bool = False):
         """
         Retrieves items that belong to the specified key from stream, passed as a stream name to 
         which the node must be subscribed. Set verbose to true for additional 
@@ -59,7 +59,7 @@ class DataController:
         except Exception as err:
             print(err)
 
-    def getItemsByKeys(self, stream: str, keys: list,  verbose: bool = False):
+    def get_items_by_keys(self, stream: str, keys: list,  verbose: bool = False):
         """
         Retrieves items in stream which match all of the specified keys in query. 
         The query is an object with a keys field. The keys field should 
@@ -81,7 +81,7 @@ class DataController:
         except Exception as err:
             print(err)
 
-    def getItemsByPublishers(self, stream: str, publishers: list, verbose: bool = False):
+    def get_items_by_publishers(self, stream: str, publishers: list, verbose: bool = False):
         """
         Retrieves items in stream which match all of the specified publishers in query. 
         The query is an object with a publishers field. The publishers field should 
@@ -103,7 +103,7 @@ class DataController:
         except Exception as err:
             print(err)
 
-    def getItemsByPublisher(self, stream: str, publisher: str,  verbose: bool = False, count: int = MAX_DATA_COUNT, start: int = -MAX_DATA_COUNT, local_ordering: bool = False):
+    def get_items_by_publisher(self, stream: str, publisher: str,  verbose: bool = False, count: int = MAX_DATA_COUNT, start: int = -MAX_DATA_COUNT, local_ordering: bool = False):
         """
         Retrieves items that belong to the specified publisher from stream, passed as a stream name to 
         which the node must be subscribed. Set verbose to true for additional 
@@ -122,7 +122,7 @@ class DataController:
         except Exception as err:
             print(err)
 
-    def getStreamItems(self, stream: str, verbose: bool = False, count: int = MAX_DATA_COUNT, start: int = -MAX_DATA_COUNT, local_ordering: bool = False):
+    def get_stream_items(self, stream: str, verbose: bool = False, count: int = MAX_DATA_COUNT, start: int = -MAX_DATA_COUNT, local_ordering: bool = False):
         """
         Retrieves items in stream, passed as a stream name. 
         Set verbose to true for additional information about each item’s transaction. 
@@ -144,7 +144,7 @@ class DataController:
         except Exception as err:
             print(err)
 
-    def getStreamPublishers(self, stream: str, addresses: list = None, verbose: bool = False, count: int = MAX_DATA_COUNT, start: int = -MAX_DATA_COUNT, local_ordering: bool = False):
+    def get_stream_publishers(self, stream: str, addresses: list = None, verbose: bool = False, count: int = MAX_DATA_COUNT, start: int = -MAX_DATA_COUNT, local_ordering: bool = False):
         """
         Provides information about publishers who have written to stream, 
         passed as a stream name. Pass an array for multiple publishers, or 

@@ -26,7 +26,7 @@ class DataController:
         and data in JSON format.
         """
         try:
-            json_data = json.loads(quote(data))
+            json_data = json.loads(data)
             formatted_data = json.dumps({"json": json_data})
             args = self._publish_item_arg + \
                 [quote(stream), json.dumps(keys), formatted_data]

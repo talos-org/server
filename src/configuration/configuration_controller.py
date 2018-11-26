@@ -78,11 +78,12 @@ class ConfigurationController:
         """
         Intializes the blockchain and also creates the genesis block
         :param blockchain_name: Name of the blockchain that is to be  deployed
-        :return: Confirmation message acknowledging the deployment of the blockchain
+        :return: Boolean value  acknowledging the deployment of the blockchain
         """
         try:
             cmd = self._multichain_d_arg+[blockchain_name, self._multichain_daemon]+[self._data_dir_arg+self._params_path]
-            run(cmd, timeout=5, cwd=self._install_path)
+            output = run(cmd, timeout=5, cwd=self._install_path)
+            return True
         except CalledProcessError as err:
             print(err.stderr)
         except Exception as err:

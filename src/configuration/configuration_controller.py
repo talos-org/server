@@ -1,14 +1,18 @@
 from subprocess import run, CalledProcessError
 import os
-from configparser import RawConfigParser
 from configobj import ConfigObj
 from pathlib import Path
+from shlex import quote
+import json
 
-class ConfiguartionController:
+
+class ConfigurationController:
     def __init__(self, params_path='', install_path=''):
         self._multichain_util_arg = ['./multichain-util']
         self._multichain_d_arg = ['./multichaind']
+        self._multichain_cli_arg = ['multichain-cli']
         self._create = self._multichain_util_arg+['create']
+        self._networkinfo_arg = 'getnetworkinfo'
         self._data_dir_arg = "-datadir="
         self._multichain_daemon = "-daemon"
         self._multichain_path = ".multichain/"
@@ -21,6 +25,9 @@ class ConfiguartionController:
         self._default_install_path = '/usr/local/bin'
         self._params_path = self.validate_params_path(params_path)
         self._install_path = self.validate_install_path(install_path)
+        self._localaddresses_arg = 'localaddresses'
+        self._address_arg = 'address'
+        self._default_network_port_arg = 'default-network-port'
 
     def create_chain(self,blockchain_name: str):
         """
@@ -63,7 +70,6 @@ class ConfiguartionController:
 
             for key in params_dict:
                 config[key]=params_dict.get(key)
-
             config.write()
         except Exception as err:
             print(err)
@@ -72,12 +78,12 @@ class ConfiguartionController:
         """
         Intializes the blockchain and also creates the genesis block
         :param blockchain_name: Name of the blockchain that is to be  deployed
-        :return: Confirmation message acknowledging the deployment of the blockchain
+        :return: Boolean value  acknowledging the deployment of the blockchain
         """
-
         try:
             cmd = self._multichain_d_arg+[blockchain_name, self._multichain_daemon]+[self._data_dir_arg+self._params_path]
-            run(cmd, timeout=5, cwd=self._install_path)
+            output = run(cmd, timeout=5, cwd=self._install_path)
+            return True
         except CalledProcessError as err:
             print(err.stderr)
         except Exception as err:
@@ -91,6 +97,7 @@ class ConfiguartionController:
         if os.path.exists(path):
             return path
         return os.path.join(str(Path.home()),self._multichain_path)
+
     def validate_install_path(self,path):
         """
         Validates the the isntall path provided by the user
@@ -100,3 +107,56 @@ class ConfiguartionController:
         if os.path.exists(path):
             return path
         return self._default_install_path
+
+    def get_node_address(self,blockchain_name: str):
+        """
+        Returns the node address for the specified blockchain in
+        the fomart -> chain1@[ip-address]:[port]
+        :param blockchain_name:
+        :return:
+        """
+
+        try:
+            cmd = self._multichain_cli_arg +[quote(blockchain_name)]+[self._networkinfo_arg]
+            output = run(cmd, check=True, capture_output=True, cwd=self._install_path)
+            json_output = json.loads(output.stdout.strip())
+            ip_address = json_output[self._localaddresses_arg][0][self._address_arg]
+            val = blockchain_name +'@'+ ip_address+':'+ self.get_config_param(blockchain_name, param=self._default_network_port_arg)
+            return val
+        except CalledProcessError as err:
+            print(err.stderr)
+        except Exception as err:
+            print(err)
+
+    def get_config_param(self,blockchain_name: str, param: str):
+        """
+        Returns the value for a specified parameter within in the param.dat file
+        eg - value = config.get_config_param(blockchain_name=name,param='default-network-port')
+        :param blockchain_name: name of the blockchain
+        :param param: parameter to be changed
+        :returns: Value of the parameter from the params.dat file
+        """
+        try:
+            config = ConfigObj(self._params_path + blockchain_name + self._params_file)
+            value = config[param]
+            return value
+        except Exception as err:
+            print(err)
+
+    def get_blockchains(self):
+        """
+        Provides a list of all the blockchains in the params path
+        default in -> ~/.multichain
+        :returns: a list containing string value that represents a blockchain
+        """
+        files = os.listdir(self._params_path)
+        chains = []
+        for chain in files:
+            try:
+                files = os.listdir(os.path.join(self._params_path, chain))
+                if 'params.dat' in files:
+                    chains.append(chain)
+            except Exception as err:
+                continue
+
+        return chains

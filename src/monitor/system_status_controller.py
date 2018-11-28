@@ -43,3 +43,30 @@ class SystemStatusController:
             print(err.stderr)
         except Exception as err:
             print(err)
+    
+    def get_inactive_nodes(self, nodes_connect_permisison: list):
+        """
+        Returns a set of wallet address that are not connectable. 
+        """
+        try:
+            if not nodes_connect_permisison:
+                raise ValueError('The list of nodes with connection permission is empty')
+
+            nodes_address = set()
+
+            for node in nodes_connect_permisison:
+                nodes_address.add(node['address'])
+
+            connectable_nodes = self.get_peer_info()
+            if not connectable_nodes:
+                return nodes_address
+            
+            connectable_nodes_address = set()
+
+            for node in connectable_nodes:
+                connectable_nodes_address.add(node['handshake']) 
+            
+            return nodes_address.difference(connectable_nodes_address)
+        except Exception as err:
+            print(err)
+

@@ -1,5 +1,6 @@
 from subprocess import run, CalledProcessError
 from shlex import quote
+from exception.multichain_error import MultiChainError
 import json
 
 
@@ -22,6 +23,14 @@ class PermissionController:
         Returns the txid of the transaction granting the permissions.
         """
         try:
+            addresses = [address.strip() for address in addresses if address.strip()]
+            if not addresses:
+                raise ValueError('The list of addresses is empty')
+            
+            permissions = [permission.strip() for permission in permissions if permission.strip()]
+            if not permissions:
+                raise ValueError('The list of permissions is empty')
+
             if not set(permissions).issubset(self._GLOBAL_PERMISSIONS_LIST):
                 raise ValueError('The permission(s) proivded: ' +
                                  permissions + ' does not exist.')
@@ -33,7 +42,7 @@ class PermissionController:
 
             return output.stdout
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)
 
@@ -44,6 +53,17 @@ class PermissionController:
         Returns the txid of the transaction granting the permissions.
         """
         try:
+            address = address.strip()
+            stream_name = stream_name.strip()
+            permission = permission.strip()
+
+            if not address:
+                raise ValueError('The address is empty')
+            if not stream_name:
+                raise ValueError('The stream name is empty')
+            if not permission:
+                raise ValueError('The permisison is empty')
+
             if permission.lower() not in self._STREAM_PERMISSIONS_LIST:
                 raise ValueError('The permission provided:' +
                                  permission + ' does not exist.')
@@ -55,7 +75,7 @@ class PermissionController:
 
             return output.stdout
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)
 
@@ -71,7 +91,10 @@ class PermissionController:
         try:
 
             permission_selector = '*'
-            if permissions is not None:
+            if permissions is not None:     
+                permissions = [permission.strip() for permission in permissions if permission.strip()]
+                if not permissions:
+                    raise ValueError('The list of permissions is empty')
                 if not set(permissions).issubset(self._GLOBAL_PERMISSIONS_LIST):
                     raise ValueError(
                         'The permission(s) proivded: ' + permissions + ' does not exist.')
@@ -80,6 +103,9 @@ class PermissionController:
 
             address_selector = '*'
             if addresses is not None:
+                addresses = [address.strip() for address in addresses if address.strip()]
+                if not addresses:
+                    raise ValueError('The list of addresses is empty')
                 address_selector = quote(','.join(addresses))
 
             args = self._get_permissions_arg + \
@@ -88,7 +114,7 @@ class PermissionController:
 
             return json.loads(output.stdout)
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)
     
@@ -101,6 +127,14 @@ class PermissionController:
         Returns the txid of transaction revoking the permissions. 
         """
         try:
+            addresses = [address.strip() for address in addresses if address.strip()]
+            if not addresses:
+                raise ValueError('The list of addresses is empty')
+            
+            permissions = [permission.strip() for permission in permissions if permission.strip()]
+            if not permissions:
+                raise ValueError('The list of permissions is empty')
+
             if not set(permissions).issubset(self._GLOBAL_PERMISSIONS_LIST):
                 raise ValueError('The permission(s) proivded: ' +
                                  permissions + ' does not exist.')
@@ -112,7 +146,7 @@ class PermissionController:
 
             return output.stdout
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)
     
@@ -123,6 +157,20 @@ class PermissionController:
         Returns the txid of transaction revoking the permissions. 
         """
         try:
+            address = address.strip()
+            stream_name = stream_name.strip()
+            permission = permission.strip()
+
+            if not address:
+                raise ValueError('The address is empty')
+            
+            if not stream_name:
+                raise ValueError('The stream name is empty')
+            
+            if not permission:
+                raise ValueError('The permission is empty')
+
+
             if permission.lower() not in self._STREAM_PERMISSIONS_LIST:
                 raise ValueError('The permission provided: ' +
                                  permission + ' does not exist.')
@@ -134,6 +182,6 @@ class PermissionController:
 
             return output.stdout
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)

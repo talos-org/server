@@ -1,5 +1,6 @@
 from subprocess import run, CalledProcessError
 from shlex import quote
+from exception.multichain_error import MultiChainError
 import json
 import time
 
@@ -40,7 +41,7 @@ class SystemStatusController:
 
             return json_peer_info
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)
     
@@ -49,6 +50,7 @@ class SystemStatusController:
         Returns a set of wallet address that are not connectable. 
         """
         try:
+            nodes_connect_permisison = [node_connect_permission.strip() for node_connect_permission in nodes_connect_permisison if node_connect_permission.strip()]
             if not nodes_connect_permisison:
                 raise ValueError('The list of nodes with connection permission is empty')
 

@@ -2,6 +2,8 @@ from subprocess import run, CalledProcessError
 from shlex import quote
 import json
 
+from exception.multichain_error import MultiChainError
+
 
 class DataController:
     MAX_DATA_COUNT = 10
@@ -28,13 +30,14 @@ class DataController:
         try:
             json_data = json.loads(data)
             formatted_data = json.dumps({"json": json_data})
+            keys = [key.strip() for key in keys]
             args = self._publish_item_arg + \
-                [quote(stream), json.dumps(keys), formatted_data]
+                [quote(stream.strip()), json.dumps(keys), formatted_data]
             output = run(args, check=True, capture_output=True)
 
             return output.stdout.strip()
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except ValueError as err:
             print(err)
         except Exception as err:
@@ -49,13 +52,13 @@ class DataController:
         object whose fields can be used with gettxoutdata.
         """
         try:
-            args = self._get_stream_key_items_arg + [quote(stream), quote(key), json.dumps(
+            args = self._get_stream_key_items_arg + [quote(stream.strip()), quote(key.strip()), json.dumps(
                 verbose), json.dumps(count), json.dumps(start), json.dumps(local_ordering)]
             items = run(args, check=True, capture_output=True)
 
             return json.loads(items.stdout)
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)
 
@@ -70,14 +73,15 @@ class DataController:
         this is needed, an error will be returned.
         """
         try:
+            keys = [key.strip() for key in keys if key.strip()]
             args = self._get_stream_keys_items_arg + \
-                [quote(stream), json.dumps(
+                [quote(stream.strip()), json.dumps(
                     {"keys": keys}), json.dumps(verbose)]
             items = run(args, check=True, capture_output=True)
 
             return json.loads(items.stdout)
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)
 
@@ -92,14 +96,15 @@ class DataController:
         this is needed, an error will be returned.
         """
         try:
+            publishers = [publisher.strip() for publisher in publishers if publisher.strip()]
             args = self._get_stream_keys_items_arg + \
-                [quote(stream), json.dumps({"publishers": publishers}),
+                [quote(stream.strip()), json.dumps({"publishers": publishers}),
                  json.dumps(verbose)]
             items = run(args, check=True, capture_output=True)
 
             return json.loads(items.stdout)
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)
 
@@ -112,13 +117,22 @@ class DataController:
         object whose fields can be used with gettxoutdata.
         """
         try:
+            stream = stream.strip()
+            publisher = publisher.strip()
+
+            if not stream:
+                raise ValueError("Stream name can't be empty")
+            
+            if not publisher:
+                raise ValueError("Publisher can't be empty")
+
             args = self._get_stream_publisher_items_arg + [quote(stream), quote(publisher), json.dumps(
                 verbose), json.dumps(count), json.dumps(start), json.dumps(local_ordering)]
             items = run(args, check=True, capture_output=True)
 
             return json.loads(items.stdout)
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)
 
@@ -134,13 +148,17 @@ class DataController:
         whose fields can be used with gettxoutdata.
         """
         try:
+            stream = stream.strip()
+            if not stream:
+                raise ValueError("Stream name can't be empty")
+
             args = self._get_stream_items_arg + [quote(stream), json.dumps(
                 verbose), json.dumps(count), json.dumps(start), json.dumps(local_ordering)]
             items = run(args, check=True, capture_output=True)
 
             return json.loads(items.stdout)
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)
 
@@ -154,8 +172,15 @@ class DataController:
         parameters, relevant only if all publishers is requested.
         """
         try:
+            stream = stream.split()
+            if not stream:
+                raise ValueError("Stream name can't be empty")
+
             address_selector = '*'
             if addresses is not None:
+                addresses = [address.strip() for address in addresses if address.strip()]
+                if not addresses:
+                    raise ValueError("Addresses can't be empty")
                 address_selector = json.dumps(addresses)
 
             args = self._get_stream_publishers_arg + [quote(stream), address_selector,  json.dumps(
@@ -164,6 +189,6 @@ class DataController:
 
             return json.loads(publishers.stdout)
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)

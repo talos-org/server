@@ -2,9 +2,9 @@ import nacl.secret
 import nacl.utils
 from nacl.public import PrivateKey, SealedBox, PublicKey
 
-from asymmetric_key_pair import AsymmetricKeyPair
-from encoded_asymmetric_key_pair import EncodedAsymmetricKeyPair
-from key_data import KeyData
+from encryption.asymmetric_key_pair import AsymmetricKeyPair
+from encryption.encoded_asymmetric_key_pair import EncodedAsymmetricKeyPair
+from encryption.key_data import KeyData
 
 KEY_ENCODING = nacl.encoding.Base64Encoder
 

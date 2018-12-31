@@ -1,5 +1,4 @@
 from subprocess import run, CalledProcessError
-from shlex import quote
 from exception.multichain_error import MultiChainError
 import json
 
@@ -8,7 +7,12 @@ class DataStreamController:
     MAX_DATA_COUNT = 10
 
     def __init__(self, blockchain_name: str):
-        self._multichain_arg = ['multichain-cli', quote(blockchain_name)]
+        blockchain_name = blockchain_name.strip()
+
+        if not blockchain_name:
+            raise ValueError("Blockchain name can't be empty")
+
+        self._multichain_arg = ['multichain-cli', blockchain_name]
         self._create_arg = self._multichain_arg + ['create']
         self._create_stream_arg = self._create_arg + ['stream']
         self._get_streams_arg = self._multichain_arg + ['liststreams']
@@ -29,7 +33,7 @@ class DataStreamController:
             if not name:
                 raise ValueError("Stream name can't be empty")
 
-            args = self._create_stream_arg + [quote(name), json.dumps(isOpen)]
+            args = self._create_stream_arg + [name, json.dumps(isOpen)]
             output = run(args, check=True, capture_output=True)
 
             return output.stdout.strip()
@@ -49,7 +53,8 @@ class DataStreamController:
         try:
             stream_selector = '*'
             if streams is not None:
-                streams = [stream.strip() for stream in streams if stream.strip()]
+                streams = [stream.strip()
+                           for stream in streams if stream.strip()]
                 if not streams:
                     raise ValueError("Stream names can't be empty")
                 stream_selector = json.dumps(streams)
@@ -121,7 +126,7 @@ class DataStreamController:
             streams = [stream.strip() for stream in streams if stream.strip()]
             if not streams:
                 raise ValueError("Stream names can't be empty")
-                
+
             return self.unsubscribe(streams) and self.subscribe(streams, True)
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)

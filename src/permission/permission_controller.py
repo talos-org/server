@@ -1,5 +1,4 @@
 from subprocess import run, CalledProcessError
-from shlex import quote
 from exception.multichain_error import MultiChainError
 import json
 
@@ -7,7 +6,12 @@ import json
 class PermissionController:
 
     def __init__(self, blockchain_name: str):
-        self._multichain_arg = ['multichain-cli', quote(blockchain_name)]
+        blockchain_name = blockchain_name.strip()
+
+        if not blockchain_name:
+            raise ValueError("Blockchain name can't be empty")
+
+        self._multichain_arg = ['multichain-cli', blockchain_name]
         self._grant_arg = self._multichain_arg + ['grant']
         self._revoke_arg = self._multichain_arg + ['revoke']
         self._get_permissions_arg = self._multichain_arg + ['listpermissions']
@@ -23,11 +27,13 @@ class PermissionController:
         Returns the txid of the transaction granting the permissions.
         """
         try:
-            addresses = [address.strip() for address in addresses if address.strip()]
+            addresses = [address.strip()
+                         for address in addresses if address.strip()]
             if not addresses:
                 raise ValueError('The list of addresses is empty')
-            
-            permissions = [permission.strip() for permission in permissions if permission.strip()]
+
+            permissions = [permission.strip()
+                           for permission in permissions if permission.strip()]
             if not permissions:
                 raise ValueError('The list of permissions is empty')
 
@@ -35,9 +41,8 @@ class PermissionController:
                 raise ValueError('The permission(s) proivded: ' +
                                  permissions + ' does not exist.')
 
-            
             args = self._grant_arg + \
-                [quote(','.join(addresses)), quote(','.join(permissions))]
+                [','.join(addresses), ','.join(permissions)]
             output = run(args, check=True, capture_output=True)
 
             return output.stdout
@@ -69,8 +74,7 @@ class PermissionController:
                                  permission + ' does not exist.')
 
             args = self._grant_arg + \
-                [quote(address), quote(
-                    stream_name + '.' + permission.lower())]
+                [address, stream_name + '.' + permission.lower()]
             output = run(args, check=True, capture_output=True)
 
             return output.stdout
@@ -91,22 +95,24 @@ class PermissionController:
         try:
 
             permission_selector = '*'
-            if permissions is not None:     
-                permissions = [permission.strip() for permission in permissions if permission.strip()]
+            if permissions is not None:
+                permissions = [permission.strip()
+                               for permission in permissions if permission.strip()]
                 if not permissions:
                     raise ValueError('The list of permissions is empty')
                 if not set(permissions).issubset(self._GLOBAL_PERMISSIONS_LIST):
                     raise ValueError(
                         'The permission(s) proivded: ' + permissions + ' does not exist.')
                 else:
-                    permission_selector = quote(','.join(permissions))
+                    permission_selector = ','.join(permissions)
 
             address_selector = '*'
             if addresses is not None:
-                addresses = [address.strip() for address in addresses if address.strip()]
+                addresses = [address.strip()
+                             for address in addresses if address.strip()]
                 if not addresses:
                     raise ValueError('The list of addresses is empty')
-                address_selector = quote(','.join(addresses))
+                address_selector = ','.join(addresses)
 
             args = self._get_permissions_arg + \
                 [permission_selector, address_selector, json.dumps(verbose)]
@@ -117,7 +123,6 @@ class PermissionController:
             raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)
-    
 
     def revoke_global_permission(self, addresses: list, permissions: list):
         """
@@ -127,11 +132,13 @@ class PermissionController:
         Returns the txid of transaction revoking the permissions. 
         """
         try:
-            addresses = [address.strip() for address in addresses if address.strip()]
+            addresses = [address.strip()
+                         for address in addresses if address.strip()]
             if not addresses:
                 raise ValueError('The list of addresses is empty')
-            
-            permissions = [permission.strip() for permission in permissions if permission.strip()]
+
+            permissions = [permission.strip()
+                           for permission in permissions if permission.strip()]
             if not permissions:
                 raise ValueError('The list of permissions is empty')
 
@@ -139,9 +146,8 @@ class PermissionController:
                 raise ValueError('The permission(s) proivded: ' +
                                  permissions + ' does not exist.')
 
-            
             args = self._revoke_arg + \
-                [quote(','.join(addresses)), quote(','.join(permissions))]
+                [','.join(addresses), ','.join(permissions)]
             output = run(args, check=True, capture_output=True)
 
             return output.stdout
@@ -149,7 +155,7 @@ class PermissionController:
             raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)
-    
+
     def revoke_stream_permission(self, address: str, stream_name: str, permission: str):
         """
         Revokes permissions from an address for a stream. 
@@ -163,21 +169,19 @@ class PermissionController:
 
             if not address:
                 raise ValueError('The address is empty')
-            
+
             if not stream_name:
                 raise ValueError('The stream name is empty')
-            
+
             if not permission:
                 raise ValueError('The permission is empty')
-
 
             if permission.lower() not in self._STREAM_PERMISSIONS_LIST:
                 raise ValueError('The permission provided: ' +
                                  permission + ' does not exist.')
 
             args = self._revoke_arg + \
-                [quote(address), quote(
-                    stream_name + '.' + permission.lower())]
+                [address, stream_name + '.' + permission.lower()]
             output = run(args, check=True, capture_output=True)
 
             return output.stdout

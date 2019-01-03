@@ -1,13 +1,18 @@
 from subprocess import run, CalledProcessError
-from shlex import quote
 import json
+from exception.multichain_error import MultiChainError
 
 
 class DataController:
     MAX_DATA_COUNT = 10
 
     def __init__(self, blockchain_name: str):
-        self._multichain_arg = ['multichain-cli', quote(blockchain_name)]
+        blockchain_name = blockchain_name.strip()
+
+        if not blockchain_name:
+            raise ValueError("Blockchain name can't be empty")
+
+        self._multichain_arg = ['multichain-cli', blockchain_name]
         self._publish_item_arg = self._multichain_arg + ['publish']
         self._get_stream_key_items_arg = self._multichain_arg + \
             ['liststreamkeyitems']
@@ -26,15 +31,35 @@ class DataController:
         and data in JSON format.
         """
         try:
+            original_number_of_keys = len(keys)
+            stream = stream.strip()
+            keys = [key.strip() for key in keys if key.strip()]
+            new_number_of_keys = len(keys)
+
+            # If any of the provided keys is invalid then an exception is thrown. This is done to prevent MultiChain from
+            # overwritting records that belong to existing key(s) that match the valid keys.
+            # Example: stream contains KEY1. Provided keys: ['KEY1', '        ']. The second key is invalid, so after cleaning
+            # Provided keys: ['KEY1']. This key already exists so a different record will be retrieved than what is expected.
+            #
+            if new_number_of_keys != original_number_of_keys:
+                raise ValueError("Only " + str(new_number_of_keys) + "/" + str(
+                    original_number_of_keys) + " keys are valid. Please check the keys provided")
+
+            if not stream:
+                raise ValueError("Stream name can't be empty")
+
+            if not keys:
+                raise ValueError("key(s) can't be empty")
+
             json_data = json.loads(data)
             formatted_data = json.dumps({"json": json_data})
             args = self._publish_item_arg + \
-                [quote(stream), json.dumps(keys), formatted_data]
+                [stream, json.dumps(keys), formatted_data]
             output = run(args, check=True, capture_output=True)
 
             return output.stdout.strip()
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except ValueError as err:
             print(err)
         except Exception as err:
@@ -49,13 +74,21 @@ class DataController:
         object whose fields can be used with gettxoutdata.
         """
         try:
-            args = self._get_stream_key_items_arg + [quote(stream), quote(key), json.dumps(
+            stream = stream.strip()
+            key = key.strip()
+
+            if not stream:
+                raise ValueError("Stream name can't be empty")
+
+            if not key:
+                raise ValueError("key can't be empty")
+
+            args = self._get_stream_key_items_arg + [stream, key, json.dumps(
                 verbose), json.dumps(count), json.dumps(start), json.dumps(local_ordering)]
             items = run(args, check=True, capture_output=True)
-
             return json.loads(items.stdout)
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)
 
@@ -70,14 +103,34 @@ class DataController:
         this is needed, an error will be returned.
         """
         try:
+            original_number_of_keys = len(keys)
+            stream = stream.strip()
+            keys = [key.strip() for key in keys if key.strip()]
+            new_number_of_keys = len(keys)
+
+            if not stream:
+                raise ValueError("Stream name can't be empty")
+
+            # If any of the provided keys is invalid then an exception is thrown. This is done to prevent MultiChain from
+            # retrieving records that belong to existing key(s) that match the valid keys.
+            # Example: stream contains KEY1. Provided keys: ['KEY1', '        ']. The second key is invalid, so after cleaning
+            # Provided keys: ['KEY1']. This key already exists so a different record will be retrieved than what is expected.
+            #
+            if new_number_of_keys != original_number_of_keys:
+                raise ValueError("Only " + str(new_number_of_keys) + "/" + str(
+                    original_number_of_keys) + " keys are valid. Please check the keys provided")
+
+            if not keys:
+                raise ValueError("keys can't be empty")
+
             args = self._get_stream_keys_items_arg + \
-                [quote(stream), json.dumps(
+                [stream.strip(), json.dumps(
                     {"keys": keys}), json.dumps(verbose)]
             items = run(args, check=True, capture_output=True)
 
             return json.loads(items.stdout)
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)
 
@@ -92,14 +145,24 @@ class DataController:
         this is needed, an error will be returned.
         """
         try:
+            stream = stream.strip()
+            publishers = [publisher.strip()
+                          for publisher in publishers if publisher.strip()]
+
+            if not stream:
+                raise ValueError("Stream name can't be empty")
+
+            if not publishers:
+                raise ValueError("Publishers can't be empty")
+
             args = self._get_stream_keys_items_arg + \
-                [quote(stream), json.dumps({"publishers": publishers}),
+                [stream.strip(), json.dumps({"publishers": publishers}),
                  json.dumps(verbose)]
             items = run(args, check=True, capture_output=True)
 
             return json.loads(items.stdout)
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)
 
@@ -112,13 +175,22 @@ class DataController:
         object whose fields can be used with gettxoutdata.
         """
         try:
-            args = self._get_stream_publisher_items_arg + [quote(stream), quote(publisher), json.dumps(
+            stream = stream.strip()
+            publisher = publisher.strip()
+
+            if not stream:
+                raise ValueError("Stream name can't be empty")
+
+            if not publisher:
+                raise ValueError("Publisher can't be empty")
+
+            args = self._get_stream_publisher_items_arg + [stream, publisher, json.dumps(
                 verbose), json.dumps(count), json.dumps(start), json.dumps(local_ordering)]
             items = run(args, check=True, capture_output=True)
 
             return json.loads(items.stdout)
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)
 
@@ -134,13 +206,17 @@ class DataController:
         whose fields can be used with gettxoutdata.
         """
         try:
-            args = self._get_stream_items_arg + [quote(stream), json.dumps(
+            stream = stream.strip()
+            if not stream:
+                raise ValueError("Stream name can't be empty")
+
+            args = self._get_stream_items_arg + [stream, json.dumps(
                 verbose), json.dumps(count), json.dumps(start), json.dumps(local_ordering)]
             items = run(args, check=True, capture_output=True)
 
             return json.loads(items.stdout)
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)
 
@@ -154,16 +230,24 @@ class DataController:
         parameters, relevant only if all publishers is requested.
         """
         try:
+            stream = stream.strip()
+            if not stream:
+                raise ValueError("Stream name can't be empty")
+
             address_selector = '*'
             if addresses is not None:
+                addresses = [address.strip()
+                             for address in addresses if address.strip()]
+                if not addresses:
+                    raise ValueError("Addresses can't be empty")
                 address_selector = json.dumps(addresses)
 
-            args = self._get_stream_publishers_arg + [quote(stream), address_selector,  json.dumps(
+            args = self._get_stream_publishers_arg + [stream, address_selector,  json.dumps(
                 verbose), json.dumps(count), json.dumps(start), json.dumps(local_ordering)]
             publishers = run(args, check=True, capture_output=True)
 
             return json.loads(publishers.stdout)
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)

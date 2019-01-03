@@ -85,9 +85,9 @@ class ConfigurationController:
             output = run(cmd, timeout=5, cwd=self._install_path)
             return True
         except CalledProcessError as err:
-            print(err.stderr)
+            raise err.stderr
         except Exception as err:
-            print(err)
+            raise err
 
     def validate_params_path(self,path):
         """
@@ -124,9 +124,9 @@ class ConfigurationController:
             val = blockchain_name +'@'+ ip_address+':'+ self.get_config_param(blockchain_name, param=self._default_network_port_arg)
             return val
         except CalledProcessError as err:
-            print(err.stderr)
+            raise err.stderr
         except Exception as err:
-            print(err)
+            raise err
 
     def get_config_param(self,blockchain_name: str, param: str):
         """

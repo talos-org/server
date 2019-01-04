@@ -5,15 +5,15 @@ import json
 
 class DataStreamController:
     MAX_DATA_COUNT = 10
-    MULTICHAIN_ARG = 'multichain-cli'
-    CREATE_ARG = 'create'
-    CREATE_STREAM_ARG = 'stream'
-    GET_STREAMS_ARG = 'liststreams'
-    SUBSCRIBE_TO_STREAM_ARG = 'subscribe'
-    UNSUBSCRIBE_FROM_STREAM_ARG = 'unsubscribe'
+    MULTICHAIN_ARG = "multichain-cli"
+    CREATE_ARG = "create"
+    CREATE_STREAM_ARG = "stream"
+    GET_STREAMS_ARG = "liststreams"
+    SUBSCRIBE_TO_STREAM_ARG = "subscribe"
+    UNSUBSCRIBE_FROM_STREAM_ARG = "unsubscribe"
 
     @staticmethod
-    def create_stream(blockchain_name: str,  stream_name: str, isOpen: bool):
+    def create_stream(blockchain_name: str, stream_name: str, isOpen: bool):
         """
         Creates a new stream on the blockchain called name. 
         Pass the value "stream" in the type parameter. If open is true 
@@ -30,8 +30,13 @@ class DataStreamController:
             if not stream_name:
                 raise ValueError("Stream name can't be empty")
 
-            args = [DataStreamController.MULTICHAIN_ARG, blockchain_name,
-                    DataStreamController.CREATE_STREAM_ARG, stream_name, json.dumps(isOpen)]
+            args = [
+                DataStreamController.MULTICHAIN_ARG,
+                blockchain_name,
+                DataStreamController.CREATE_STREAM_ARG,
+                stream_name,
+                json.dumps(isOpen),
+            ]
             output = run(args, check=True, capture_output=True)
 
             return output.stdout.strip()
@@ -41,7 +46,13 @@ class DataStreamController:
             print(err)
 
     @staticmethod
-    def get_streams(blockchain_name: str, streams: list = None, verbose: bool = False, count: int = MAX_DATA_COUNT, start: int = -MAX_DATA_COUNT):
+    def get_streams(
+        blockchain_name: str,
+        streams: list = None,
+        verbose: bool = False,
+        count: int = MAX_DATA_COUNT,
+        start: int = -MAX_DATA_COUNT,
+    ):
         """
         Returns information about streams created on the blockchain. Pass an array
         of stream name(s) to retrieve information about the stream(s), 
@@ -53,17 +64,23 @@ class DataStreamController:
             blockchain_name = blockchain_name.strip()
             if not blockchain_name:
                 raise ValueError("Blockchain name can't be empty")
-                
-            stream_selector = '*'
+
+            stream_selector = "*"
             if streams is not None:
-                streams = [stream.strip()
-                           for stream in streams if stream.strip()]
+                streams = [stream.strip() for stream in streams if stream.strip()]
                 if not streams:
                     raise ValueError("Stream names can't be empty")
                 stream_selector = json.dumps(streams)
 
-            args = [DataStreamController.MULTICHAIN_ARG, blockchain_name, DataStreamController.GET_STREAMS_ARG,
-                    stream_selector, json.dumps(verbose), json.dumps(count), json.dumps(start)]
+            args = [
+                DataStreamController.MULTICHAIN_ARG,
+                blockchain_name,
+                DataStreamController.GET_STREAMS_ARG,
+                stream_selector,
+                json.dumps(verbose),
+                json.dumps(count),
+                json.dumps(start),
+            ]
             streams = run(args, check=True, capture_output=True)
             return json.loads(streams.stdout)
         except CalledProcessError as err:
@@ -89,8 +106,13 @@ class DataStreamController:
             if not streams:
                 raise ValueError("Stream names can't be empty")
 
-            args = [DataStreamController.MULTICHAIN_ARG, blockchain_name,
-                    DataStreamController.SUBSCRIBE_TO_STREAM_ARG, json.dumps(streams), json.dumps(rescan)]
+            args = [
+                DataStreamController.MULTICHAIN_ARG,
+                blockchain_name,
+                DataStreamController.SUBSCRIBE_TO_STREAM_ARG,
+                json.dumps(streams),
+                json.dumps(rescan),
+            ]
             output = run(args, check=True, capture_output=True)
 
             # returns True if output is empty (meaning it was a success)
@@ -115,8 +137,13 @@ class DataStreamController:
             streams = [stream.strip() for stream in streams if stream.strip()]
             if not streams:
                 raise ValueError("Stream names can't be empty")
-            
-            args = [DataStreamController.MULTICHAIN_ARG, blockchain_name, DataStreamController.UNSUBSCRIBE_FROM_STREAM_ARG, json.dumps(streams)]
+
+            args = [
+                DataStreamController.MULTICHAIN_ARG,
+                blockchain_name,
+                DataStreamController.UNSUBSCRIBE_FROM_STREAM_ARG,
+                json.dumps(streams),
+            ]
             output = run(args, check=True, capture_output=True)
 
             # returns True if output is empty (meaning it was a success)
@@ -145,7 +172,9 @@ class DataStreamController:
             if not streams:
                 raise ValueError("Stream names can't be empty")
 
-            return DataStreamController.unsubscribe(blockchain_name, streams) and DataStreamController.subscribe(blockchain_name, streams, True)
+            return DataStreamController.unsubscribe(
+                blockchain_name, streams
+            ) and DataStreamController.subscribe(blockchain_name, streams, True)
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
         except Exception as err:

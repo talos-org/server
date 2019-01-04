@@ -4,6 +4,7 @@ from configobj import ConfigObj
 from pathlib import Path
 from shlex import quote
 import json
+from app.models.exception.multichain_error import MultiChainError
 
 
 class ConfigurationController:
@@ -45,7 +46,7 @@ class ConfigurationController:
             output = run(cmd, check=True, capture_output=True, cwd=self._install_path)
             return output.stdout.strip()
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
             print(err)
 
@@ -85,7 +86,7 @@ class ConfigurationController:
             output = run(cmd, timeout=5, cwd=self._install_path)
             return True
         except CalledProcessError as err:
-            raise err.stderr
+            raise MultiChainError(err.stderr)
         except Exception as err:
             raise err
 
@@ -124,7 +125,7 @@ class ConfigurationController:
             val = blockchain_name +'@'+ ip_address+':'+ self.get_config_param(blockchain_name, param=self._default_network_port_arg)
             return val
         except CalledProcessError as err:
-            raise err.stderr
+            raise MultiChainError(err.stderr)
         except Exception as err:
             raise err
 

@@ -1,36 +1,27 @@
 from subprocess import run, CalledProcessError
 import json
-from exception.multichain_error import MultiChainError
+from app.models.exception.multichain_error import MultiChainError
 
 
 class DataController:
     MAX_DATA_COUNT = 10
+    MULTICHAIN_ARG = 'multichain-cli'
+    PUBLISH_ITEM_ARG = 'publish'
+    GET_STREAM_KEY_ITEMS_ARG = 'liststreamkeyitems'
+    GET_STREAM_KEYS_ITEMS_ARG = 'liststreamqueryitems'
+    GET_STREAM_KEYS_ARG = 'liststreamkeys'
+    GET_STERAM_ITEMS_ARG = 'liststreamitems'
+    GET_STREAM_PUBLISHER_ITEMS_ARG = 'liststreampublisheritems'
+    GET_STREAM_PUBLISHERS_ARG = 'liststreampublishers'
 
-    def __init__(self, blockchain_name: str):
-        blockchain_name = blockchain_name.strip()
-
-        if not blockchain_name:
-            raise ValueError("Blockchain name can't be empty")
-
-        self._multichain_arg = ['multichain-cli', blockchain_name]
-        self._publish_item_arg = self._multichain_arg + ['publish']
-        self._get_stream_key_items_arg = self._multichain_arg + \
-            ['liststreamkeyitems']
-        self._get_stream_keys_items_arg = self._multichain_arg + \
-            ['liststreamqueryitems']
-        self._get_stream_keys_arg = self._multichain_arg + ['liststreamkeys']
-        self._get_stream_items_arg = self._multichain_arg + ['liststreamitems']
-        self._get_stream_publisher_items_arg = self._multichain_arg + \
-            ['liststreampublisheritems']
-        self._get_stream_publishers_arg = self._multichain_arg + \
-            ['liststreampublishers']
-
-    def publish_item(self, stream: str, keys: list, data: str):
+    @staticmethod
+    def publish_item(blockchain_name: str, stream: str, keys: list, data: str):
         """
         Publishes an item in stream, passed as a stream name, an array of keys 
         and data in JSON format.
         """
         try:
+            blockchain_name = blockchain_name.strip()
             original_number_of_keys = len(keys)
             stream = stream.strip()
             keys = [key.strip() for key in keys if key.strip()]
@@ -39,7 +30,7 @@ class DataController:
             # If any of the provided keys is invalid then an exception is thrown. This is done to prevent MultiChain from
             # overwritting records that belong to existing key(s) that match the valid keys.
             # Example: stream contains KEY1. Provided keys: ['KEY1', '        ']. The second key is invalid, so after cleaning
-            # Provided keys: ['KEY1']. This key already exists so a different record will be retrieved than what is expected.
+            # Provided keys: ['KEY1']. This key already exists so the data will be overwritten.
             #
             if new_number_of_keys != original_number_of_keys:
                 raise ValueError("Only " + str(new_number_of_keys) + "/" + str(
@@ -47,14 +38,17 @@ class DataController:
 
             if not stream:
                 raise ValueError("Stream name can't be empty")
+            
+            if not blockchain_name:
+                raise ValueError("Blockchain name can't be empty")
 
             if not keys:
                 raise ValueError("key(s) can't be empty")
 
             json_data = json.loads(data)
             formatted_data = json.dumps({"json": json_data})
-            args = self._publish_item_arg + \
-                [stream, json.dumps(keys), formatted_data]
+            args = [DataController.MULTICHAIN_ARG, blockchain_name,
+                    DataController.PUBLISH_ITEM_ARG, stream, json.dumps(keys), formatted_data]
             output = run(args, check=True, capture_output=True)
 
             return output.stdout.strip()
@@ -65,7 +59,8 @@ class DataController:
         except Exception as err:
             print(err)
 
-    def get_items_by_key(self, stream: str, key: str,  verbose: bool = False, count: int = MAX_DATA_COUNT, start: int = -MAX_DATA_COUNT, local_ordering: bool = False):
+    @staticmethod
+    def get_items_by_key(blockchain_name: str, stream: str, key: str,  verbose: bool = False, count: int = MAX_DATA_COUNT, start: int = -MAX_DATA_COUNT, local_ordering: bool = False):
         """
         Retrieves items that belong to the specified key from stream, passed as a stream name to 
         which the node must be subscribed. Set verbose to true for additional 
@@ -74,6 +69,7 @@ class DataController:
         object whose fields can be used with gettxoutdata.
         """
         try:
+            blockchain_name = blockchain_name.strip()
             stream = stream.strip()
             key = key.strip()
 
@@ -82,9 +78,12 @@ class DataController:
 
             if not key:
                 raise ValueError("key can't be empty")
+            
+            if not blockchain_name:
+                raise ValueError("Blockchain name can't be empty")
 
-            args = self._get_stream_key_items_arg + [stream, key, json.dumps(
-                verbose), json.dumps(count), json.dumps(start), json.dumps(local_ordering)]
+            args = [DataController.MULTICHAIN_ARG, blockchain_name, DataController.GET_STREAM_KEY_ITEMS_ARG,
+                    stream, key, json.dumps(verbose), json.dumps(count), json.dumps(start), json.dumps(local_ordering)]
             items = run(args, check=True, capture_output=True)
             return json.loads(items.stdout)
         except CalledProcessError as err:
@@ -92,7 +91,8 @@ class DataController:
         except Exception as err:
             print(err)
 
-    def get_items_by_keys(self, stream: str, keys: list,  verbose: bool = False):
+    @staticmethod
+    def get_items_by_keys(blockchain_name: str, stream: str, keys: list,  verbose: bool = False):
         """
         Retrieves items in stream which match all of the specified keys in query. 
         The query is an object with a keys field. The keys field should 
@@ -103,6 +103,7 @@ class DataController:
         this is needed, an error will be returned.
         """
         try:
+            blockchain_name = blockchain_name.strip()
             original_number_of_keys = len(keys)
             stream = stream.strip()
             keys = [key.strip() for key in keys if key.strip()]
@@ -122,10 +123,12 @@ class DataController:
 
             if not keys:
                 raise ValueError("keys can't be empty")
+            
+            if not blockchain_name:
+                raise ValueError("Blockchain name can't be empty")
 
-            args = self._get_stream_keys_items_arg + \
-                [stream.strip(), json.dumps(
-                    {"keys": keys}), json.dumps(verbose)]
+            args = [DataController.MULTICHAIN_ARG, blockchain_name, DataController.GET_STREAM_KEYS_ITEMS_ARG,
+                    stream, json.dumps({"keys": keys}), json.dumps(verbose)]
             items = run(args, check=True, capture_output=True)
 
             return json.loads(items.stdout)
@@ -134,7 +137,8 @@ class DataController:
         except Exception as err:
             print(err)
 
-    def get_items_by_publishers(self, stream: str, publishers: list, verbose: bool = False):
+    @staticmethod
+    def get_items_by_publishers(blockchain_name: str, stream: str, publishers: list, verbose: bool = False):
         """
         Retrieves items in stream which match all of the specified publishers in query. 
         The query is an object with a publishers field. The publishers field should 
@@ -145,6 +149,7 @@ class DataController:
         this is needed, an error will be returned.
         """
         try:
+            blockchain_name = blockchain_name.strip()
             stream = stream.strip()
             publishers = [publisher.strip()
                           for publisher in publishers if publisher.strip()]
@@ -154,10 +159,12 @@ class DataController:
 
             if not publishers:
                 raise ValueError("Publishers can't be empty")
+            
+            if not blockchain_name:
+                raise ValueError("Blockchain name can't be empty")
 
-            args = self._get_stream_keys_items_arg + \
-                [stream.strip(), json.dumps({"publishers": publishers}),
-                 json.dumps(verbose)]
+            args = [DataController.MULTICHAIN_ARG, blockchain_name, DataController.GET_STREAM_KEYS_ITEMS_ARG,
+                    stream, json.dumps({"publishers": publishers}), json.dumps(verbose)]
             items = run(args, check=True, capture_output=True)
 
             return json.loads(items.stdout)
@@ -166,7 +173,8 @@ class DataController:
         except Exception as err:
             print(err)
 
-    def get_items_by_publisher(self, stream: str, publisher: str,  verbose: bool = False, count: int = MAX_DATA_COUNT, start: int = -MAX_DATA_COUNT, local_ordering: bool = False):
+    @staticmethod
+    def get_items_by_publisher(blockchain_name: str, stream: str, publisher: str,  verbose: bool = False, count: int = MAX_DATA_COUNT, start: int = -MAX_DATA_COUNT, local_ordering: bool = False):
         """
         Retrieves items that belong to the specified publisher from stream, passed as a stream name to 
         which the node must be subscribed. Set verbose to true for additional 
@@ -175,6 +183,7 @@ class DataController:
         object whose fields can be used with gettxoutdata.
         """
         try:
+            blockchain_name = blockchain_name.strip()
             stream = stream.strip()
             publisher = publisher.strip()
 
@@ -183,9 +192,12 @@ class DataController:
 
             if not publisher:
                 raise ValueError("Publisher can't be empty")
+            
+            if not blockchain_name:
+                raise ValueError("Blockchain name can't be empty")
 
-            args = self._get_stream_publisher_items_arg + [stream, publisher, json.dumps(
-                verbose), json.dumps(count), json.dumps(start), json.dumps(local_ordering)]
+            args = [DataController.MULTICHAIN_ARG, blockchain_name, DataController.GET_STREAM_PUBLISHER_ITEMS_ARG,
+                    stream, publisher, json.dumps(verbose), json.dumps(count), json.dumps(start), json.dumps(local_ordering)]
             items = run(args, check=True, capture_output=True)
 
             return json.loads(items.stdout)
@@ -194,7 +206,8 @@ class DataController:
         except Exception as err:
             print(err)
 
-    def get_stream_items(self, stream: str, verbose: bool = False, count: int = MAX_DATA_COUNT, start: int = -MAX_DATA_COUNT, local_ordering: bool = False):
+    @staticmethod
+    def get_stream_items(blockchain_name: str, stream: str, verbose: bool = False, count: int = MAX_DATA_COUNT, start: int = -MAX_DATA_COUNT, local_ordering: bool = False):
         """
         Retrieves items in stream, passed as a stream name. 
         Set verbose to true for additional information about each item’s transaction. 
@@ -206,12 +219,17 @@ class DataController:
         whose fields can be used with gettxoutdata.
         """
         try:
+            blockchain_name = blockchain_name.strip()
             stream = stream.strip()
+
             if not stream:
                 raise ValueError("Stream name can't be empty")
+            
+            if not blockchain_name:
+                raise ValueError("Blockchain name can't be empty")
 
-            args = self._get_stream_items_arg + [stream, json.dumps(
-                verbose), json.dumps(count), json.dumps(start), json.dumps(local_ordering)]
+            args = [DataController.MULTICHAIN_ARG, blockchain_name, DataController.GET_STERAM_ITEMS_ARG,
+                    stream, json.dumps(verbose), json.dumps(count), json.dumps(start), json.dumps(local_ordering)]
             items = run(args, check=True, capture_output=True)
 
             return json.loads(items.stdout)
@@ -220,7 +238,8 @@ class DataController:
         except Exception as err:
             print(err)
 
-    def get_stream_publishers(self, stream: str, addresses: list = None, verbose: bool = False, count: int = MAX_DATA_COUNT, start: int = -MAX_DATA_COUNT, local_ordering: bool = False):
+    @staticmethod
+    def get_stream_publishers(blockchain_name: str, stream: str, addresses: list = None, verbose: bool = False, count: int = MAX_DATA_COUNT, start: int = -MAX_DATA_COUNT, local_ordering: bool = False):
         """
         Provides information about publishers who have written to stream, 
         passed as a stream name. Pass an array for multiple publishers, or 
@@ -230,9 +249,14 @@ class DataController:
         parameters, relevant only if all publishers is requested.
         """
         try:
+            blockchain_name = blockchain_name.strip()
             stream = stream.strip()
+
             if not stream:
                 raise ValueError("Stream name can't be empty")
+            
+            if not blockchain_name:
+                raise ValueError("Blockchain name can't be empty")
 
             address_selector = '*'
             if addresses is not None:
@@ -242,8 +266,8 @@ class DataController:
                     raise ValueError("Addresses can't be empty")
                 address_selector = json.dumps(addresses)
 
-            args = self._get_stream_publishers_arg + [stream, address_selector,  json.dumps(
-                verbose), json.dumps(count), json.dumps(start), json.dumps(local_ordering)]
+            args = [DataController.MULTICHAIN_ARG, blockchain_name, DataController.GET_STREAM_PUBLISHERS_ARG, stream,
+                    address_selector,  json.dumps(verbose), json.dumps(count), json.dumps(start), json.dumps(local_ordering)]
             publishers = run(args, check=True, capture_output=True)
 
             return json.loads(publishers.stdout)

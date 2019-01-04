@@ -1,23 +1,17 @@
 from subprocess import run, CalledProcessError
-from exception.multichain_error import MultiChainError
+from app.models.exception.multichain_error import MultiChainError
 import json
 import time
 
 
 class SystemStatusController:
-
-    def __init__(self, blockchain_name: str):
-        blockchain_name = blockchain_name.strip()
-
-        if not blockchain_name:
-            raise ValueError("Blockchain name can't be empty")
-
-        self._multichain_arg = ['multichain-cli', blockchain_name]
-        self._get_peer_info_arg = self._multichain_arg + ['getpeerinfo']
-        self._get_wallet_addresses = self._multichain_arg + ['getaddresses']
-        self._TARGET_DATE_TIME_FORMAT = '%m-%d-%Y %H:%M:%S'
-
-    def get_peer_info(self):
+    MULTICHAIN_ARG = 'multichain-cli'
+    GET_PEER_INFO_ARG = 'getpeerinfo'
+    GET_WALLET_ADDRESSES_ARG = 'getaddresses'
+    TARGET_DATE_TIME_FORMAT = '%m-%d-%Y %H:%M:%S'
+    
+    @staticmethod
+    def get_peer_info(blockchain_name: str):
         """
         Returns information about the other nodes to which this node is connected. The main information that is returned is:
         "lastsend":                (numeric) The date and time of the last send
@@ -29,8 +23,12 @@ class SystemStatusController:
         "pingtime":                (numeric) ping time (if available)
         """
         try:
-            output = run(self._get_peer_info_arg,
-                         check=True, capture_output=True)
+            blockchain_name = blockchain_name.strip()
+            if not blockchain_name:
+                raise ValueError("Blockchain name can't be empty")
+
+            args = [SystemStatusController.MULTICHAIN_ARG, blockchain_name, SystemStatusController.GET_PEER_INFO_ARG]
+            output = run(args, check=True, capture_output=True)
 
             json_peer_info = json.loads(output.stdout)
 
@@ -38,11 +36,11 @@ class SystemStatusController:
             # to a human readable date and time
             for peer in json_peer_info:
                 peer['lastsend'] = time.strftime(
-                    self._TARGET_DATE_TIME_FORMAT, time.localtime(int(peer['lastsend'])))
+                    SystemStatusController.TARGET_DATE_TIME_FORMAT, time.localtime(int(peer['lastsend'])))
                 peer['lastrecv'] = time.strftime(
-                    self._TARGET_DATE_TIME_FORMAT, time.localtime(int(peer['lastrecv'])))
+                    SystemStatusController.TARGET_DATE_TIME_FORMAT, time.localtime(int(peer['lastrecv'])))
                 peer['conntime'] = time.strftime(
-                    self._TARGET_DATE_TIME_FORMAT, time.localtime(int(peer['conntime'])))
+                    SystemStatusController.TARGET_DATE_TIME_FORMAT, time.localtime(int(peer['conntime'])))
 
             return json_peer_info
         except CalledProcessError as err:
@@ -50,13 +48,18 @@ class SystemStatusController:
         except Exception as err:
             print(err)
 
-    def __get_wallet_address(self):
+    @staticmethod
+    def get_wallet_address(blockchain_name: str):
         """
         Returns the wallet address for the node that is running this server.
         """
         try:
-            output = run(self._get_wallet_addresses,
-                         check=True, capture_output=True)
+            blockchain_name = blockchain_name.strip()
+            if not blockchain_name:
+                raise ValueError("Blockchain name can't be empty")
+            
+            args = [SystemStatusController.MULTICHAIN_ARG, blockchain_name, SystemStatusController.GET_WALLET_ADDRESSES_ARG]
+            output = run(args, check=True, capture_output=True)
 
             wallet_addresses = json.loads(output.stdout)
             wallet_address = wallet_addresses[0]
@@ -70,11 +73,16 @@ class SystemStatusController:
         except Exception as err:
             print(err)
 
-    def get_inactive_nodes(self, nodes_connect_permisison: list):
+    @staticmethod
+    def get_inactive_nodes(blockchain_name: str, nodes_connect_permisison: list):
         """
         Returns a set of wallet address that the node that is running the server is not able to connect to. 
         """
         try:
+            blockchain_name = blockchain_name.strip()
+            if not blockchain_name:
+                raise ValueError("Blockchain name can't be empty")
+
             nodes_connect_permisison = [node_connect_permission.strip(
             ) for node_connect_permission in nodes_connect_permisison if node_connect_permission.strip()]
             if not nodes_connect_permisison:
@@ -88,7 +96,7 @@ class SystemStatusController:
             for node in nodes_connect_permisison:
                 nodes_address.add(node['address'])
 
-            connectable_nodes = self.get_peer_info()
+            connectable_nodes = SystemStatusController.get_peer_info(blockchain_name)
             if not connectable_nodes:
                 return nodes_address
 
@@ -102,7 +110,7 @@ class SystemStatusController:
 
             # Adds the wallet address for the node that is running this server as get peer info doesn't return this address.
             #
-            connectable_nodes_address.add(self.__get_wallet_address())
+            connectable_nodes_address.add(SystemStatusController.get_wallet_address(blockchain_name))
 
             # Returns all the nodes that should be able to connect to the blockchain but are not currently connected.
             #

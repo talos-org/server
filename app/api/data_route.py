@@ -1,21 +1,23 @@
 from flask import Flask, request, jsonify, Blueprint
 from flask_api import status
-from app.models.configuration.configuration_controller import ConfigurationController
+from app.models.data.data_controller import DataController
 from app.models.exception.multichain_error import MultiChainError
 
 
-mod = Blueprint('configuration', __name__)
-
-cc = ConfigurationController()
+mod = Blueprint('data', __name__)
 
 '''
-Creates the blockchain with the provided name
-The name is expected in the body of the post request using the tag "name"
+Publishes an item to a stream
+The following data is expected in the body of the request:
+    "blockchainName": blockchain name
+    "streamName": stream name
+    "keys": a list of keys for the data
+    "data": the data to be stored 
 '''
 
 
-@mod.route('/create_chain/', methods=['POST'])
-def create_chain():
+@mod.route('/publish_item/', methods=['POST'])
+def publish_item():
     try:
         json_request = request.get_json()
 
@@ -49,7 +51,7 @@ The parameter tags are expected as follows:
 
 
 @mod.route('/config_parameters/', methods=['POST'])
-def config_params():
+def get_items_by_key():
     try:
         json_request = request.get_json()
 
@@ -86,7 +88,7 @@ Deploys the created chain
 The blockchain name is expected in the body using the "blockchainName" tag
 '''
 @mod.route('/deploy_chain/', methods=['GET'])
-def deploy_chain():
+def get_items_by_keys():
     try:
         json_request = request.get_json()
 
@@ -114,7 +116,7 @@ The blockchain name is expected in the body using the "blockchainName" tag
 
 
 @mod.route('/get_node_address/', methods=['GET'])
-def get_node_address():
+def get_items_by_publishers():
     try:
         json_request = request.get_json()
 

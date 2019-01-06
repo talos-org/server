@@ -7,13 +7,18 @@ class DataStreamController:
     MAX_DATA_COUNT = 10
     MULTICHAIN_ARG = "multichain-cli"
     CREATE_ARG = "create"
-    CREATE_STREAM_ARG = "stream"
+    STREAM_ARG = "stream"
     GET_STREAMS_ARG = "liststreams"
     SUBSCRIBE_TO_STREAM_ARG = "subscribe"
     UNSUBSCRIBE_FROM_STREAM_ARG = "unsubscribe"
+    DEFAULT_VERBOSE_VALUE = False
+    DEFAULT_STREAM_COUNT_VALUE = MAX_DATA_COUNT
+    DEFAULT_STREAM_START_VALUE = -MAX_DATA_COUNT
+    DEFAULT_STREAMS_LIST_CONTENT = None
+    DEFAULT_RESCAN_VALUE = False
 
     @staticmethod
-    def create_stream(blockchain_name: str, stream_name: str, isOpen: bool):
+    def create_stream(blockchain_name: str, stream_name: str, is_open: bool):
         """
         Creates a new stream on the blockchain called name. 
         Pass the value "stream" in the type parameter. If open is true 
@@ -33,9 +38,10 @@ class DataStreamController:
             args = [
                 DataStreamController.MULTICHAIN_ARG,
                 blockchain_name,
-                DataStreamController.CREATE_STREAM_ARG,
+                DataStreamController.CREATE_ARG,
+                DataStreamController.STREAM_ARG,
                 stream_name,
-                json.dumps(isOpen),
+                json.dumps(is_open),
             ]
             output = run(args, check=True, capture_output=True)
 
@@ -43,15 +49,15 @@ class DataStreamController:
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
         except Exception as err:
-            print(err)
+            raise err
 
     @staticmethod
     def get_streams(
         blockchain_name: str,
-        streams: list = None,
-        verbose: bool = False,
-        count: int = MAX_DATA_COUNT,
-        start: int = -MAX_DATA_COUNT,
+        streams: list = DEFAULT_STREAMS_LIST_CONTENT,
+        verbose: bool = DEFAULT_VERBOSE_VALUE,
+        count: int = DEFAULT_STREAM_COUNT_VALUE,
+        start: int = DEFAULT_STREAM_START_VALUE,
     ):
         """
         Returns information about streams created on the blockchain. Pass an array
@@ -86,10 +92,10 @@ class DataStreamController:
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
         except Exception as err:
-            print(err)
+            raise err
 
     @staticmethod
-    def subscribe(blockchain_name: str, streams: list, rescan: bool = False):
+    def subscribe(blockchain_name: str, streams: list, rescan: bool = DEFAULT_RESCAN_VALUE):
         """
         Instructs the node to start tracking one or more stream(s). 
         These are specified using an array of one or more items. 
@@ -121,7 +127,7 @@ class DataStreamController:
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
         except Exception as err:
-            print(err)
+            raise err
 
     @staticmethod
     def unsubscribe(blockchain_name: str, streams: list):
@@ -152,7 +158,7 @@ class DataStreamController:
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
         except Exception as err:
-            print(err)
+            raise err
 
     @staticmethod
     def resubscribe(blockchain_name: str, streams: list):
@@ -178,4 +184,4 @@ class DataStreamController:
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
         except Exception as err:
-            print(err)
+            raise err

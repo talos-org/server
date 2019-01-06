@@ -13,6 +13,11 @@ class DataController:
     GET_STERAM_ITEMS_ARG = "liststreamitems"
     GET_STREAM_PUBLISHER_ITEMS_ARG = "liststreampublisheritems"
     GET_STREAM_PUBLISHERS_ARG = "liststreampublishers"
+    DEFAULT_VERBOSE_VALUE = False
+    DEFAULT_ITEM_COUNT_VALUE = MAX_DATA_COUNT
+    DEFAULT_ITEM_START_VALUE = -MAX_DATA_COUNT
+    DEFAULT_LOCAL_ORDERING_VALUE = False
+    DEFAULT_PUBLISHERS_LIST_CONTENT = None
 
     @staticmethod
     def publish_item(blockchain_name: str, stream: str, keys: list, json_data: str):
@@ -50,6 +55,8 @@ class DataController:
             if not keys:
                 raise ValueError("key(s) can't be empty")
 
+            # This is used to ensure that the json_data provided is a valid JSON object
+            #
             data = json.loads(json_data)
             formatted_data = json.dumps({"json": json_data})
             args = [
@@ -75,10 +82,10 @@ class DataController:
         blockchain_name: str,
         stream: str,
         key: str,
-        verbose: bool = False,
-        count: int = MAX_DATA_COUNT,
-        start: int = -MAX_DATA_COUNT,
-        local_ordering: bool = False,
+        verbose: bool = DEFAULT_VERBOSE_VALUE,
+        count: int = DEFAULT_ITEM_COUNT_VALUE,
+        start: int = DEFAULT_ITEM_START_VALUE,
+        local_ordering: bool = DEFAULT_LOCAL_ORDERING_VALUE,
     ):
         """
         Retrieves items that belong to the specified key from stream, passed as a stream name to 
@@ -117,11 +124,11 @@ class DataController:
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
         except Exception as err:
-            print(err)
+            raise err
 
     @staticmethod
     def get_items_by_keys(
-        blockchain_name: str, stream: str, keys: list, verbose: bool = False
+        blockchain_name: str, stream: str, keys: list, verbose: bool = DEFAULT_VERBOSE_VALUE
     ):
         """
         Retrieves items in stream which match all of the specified keys in query. 
@@ -176,11 +183,11 @@ class DataController:
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
         except Exception as err:
-            print(err)
+            raise err
 
     @staticmethod
     def get_items_by_publishers(
-        blockchain_name: str, stream: str, publishers: list, verbose: bool = False
+        blockchain_name: str, stream: str, publishers: list, verbose: bool = DEFAULT_VERBOSE_VALUE
     ):
         """
         Retrieves items in stream which match all of the specified publishers in query. 
@@ -221,17 +228,17 @@ class DataController:
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
         except Exception as err:
-            print(err)
+            raise err
 
     @staticmethod
     def get_items_by_publisher(
         blockchain_name: str,
         stream: str,
         publisher: str,
-        verbose: bool = False,
-        count: int = MAX_DATA_COUNT,
-        start: int = -MAX_DATA_COUNT,
-        local_ordering: bool = False,
+        verbose: bool = DEFAULT_VERBOSE_VALUE,
+        count: int = DEFAULT_ITEM_COUNT_VALUE,
+        start: int = DEFAULT_ITEM_START_VALUE,
+        local_ordering: bool = DEFAULT_LOCAL_ORDERING_VALUE,
     ):
         """
         Retrieves items that belong to the specified publisher from stream, passed as a stream name to 
@@ -271,16 +278,16 @@ class DataController:
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
         except Exception as err:
-            print(err)
+            raise err
 
     @staticmethod
     def get_stream_items(
         blockchain_name: str,
         stream: str,
-        verbose: bool = False,
-        count: int = MAX_DATA_COUNT,
-        start: int = -MAX_DATA_COUNT,
-        local_ordering: bool = False,
+        verbose: bool = DEFAULT_VERBOSE_VALUE,
+        count: int = DEFAULT_ITEM_COUNT_VALUE,
+        start: int = DEFAULT_ITEM_START_VALUE,
+        local_ordering: bool = DEFAULT_VERBOSE_VALUE,
     ):
         """
         Retrieves items in stream, passed as a stream name. 
@@ -318,17 +325,17 @@ class DataController:
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
         except Exception as err:
-            print(err)
+            raise err
 
     @staticmethod
     def get_stream_publishers(
         blockchain_name: str,
         stream: str,
-        addresses: list = None,
-        verbose: bool = False,
-        count: int = MAX_DATA_COUNT,
-        start: int = -MAX_DATA_COUNT,
-        local_ordering: bool = False,
+        publishers: list = DEFAULT_PUBLISHERS_LIST_CONTENT,
+        verbose: bool = DEFAULT_VERBOSE_VALUE,
+        count: int = DEFAULT_ITEM_COUNT_VALUE,
+        start: int = DEFAULT_ITEM_START_VALUE,
+        local_ordering: bool = DEFAULT_LOCAL_ORDERING_VALUE,
     ):
         """
         Provides information about publishers who have written to stream, 
@@ -349,13 +356,13 @@ class DataController:
                 raise ValueError("Blockchain name can't be empty")
 
             address_selector = "*"
-            if addresses is not None:
-                addresses = [
-                    address.strip() for address in addresses if address.strip()
+            if publishers is not None:
+                publishers = [
+                    address.strip() for address in publishers if address.strip()
                 ]
-                if not addresses:
+                if not publishers:
                     raise ValueError("Addresses can't be empty")
-                address_selector = json.dumps(addresses)
+                address_selector = json.dumps(publishers)
 
             args = [
                 DataController.MULTICHAIN_ARG,
@@ -374,4 +381,4 @@ class DataController:
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
         except Exception as err:
-            print(err)
+            raise err

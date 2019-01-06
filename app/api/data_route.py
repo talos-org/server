@@ -5,7 +5,41 @@ from app.models.exception.multichain_error import MultiChainError
 import json
 
 
+VERBOSE_FIELD_NAME = "verbose"
+COUNT_FIELD_NAME = "count"
+START_FIELD_NAME = "start"
+BLOCKCHAIN_NAME_FIELD_NAME = "blockchainName"
+STREAM_NAME_FIELD_NAME = "streamName"
+DATA_FIELD_NAME = "data"
+LOCAL_ORDERING_FIELD_NAME = "localOrdering"
+PUBLISHER_FIELD_NAME = "publisher"
+PUBLISHERS_FIELD_NAME = "publishers" 
+KEY_FIELD_NAME = "key"
+KEYS_FIELD_NAME = "keys"
+
 mod = Blueprint("data", __name__)
+
+
+def convert_to_boolean(field_name:str, value: str):
+    try:
+        if value in ["True", "true"]:
+            return True
+        elif value in ["False", "false"]:
+            return False
+        raise ValueError("The value provided for " + field_name + " is not a valid boolean value")
+    except ValueError as ex:
+        raise ex
+    except Exception as ex:
+        raise ex
+    
+
+def convert_to_int(field_name:str, value:str):
+    try:
+        return int(value)
+    except ValueError as ex:
+        raise ValueError("The value provided for " + field_name + " is not an integer")
+    except Exception as ex:
+        raise ex
 
 """
 Publishes an item to a stream
@@ -15,8 +49,6 @@ The following data is expected in the body of the request:
     "keys": a list of keys for the data
     "data": the data to be stored 
 """
-
-
 @mod.route("/publish_item/", methods=["POST"])
 def publish_item():
     try:
@@ -28,10 +60,10 @@ def publish_item():
                 status.HTTP_204_NO_CONTENT,
             )
 
-        blockchain_name = json_request["blockchainName"]
-        stream_name = json_request["streamName"]
-        keys = json_request["keys"]
-        data = json_request["data"]
+        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
+        stream_name = json_request[STREAM_NAME_FIELD_NAME]
+        keys = json_request[KEYS_FIELD_NAME]
+        data = json_request[DATA_FIELD_NAME]
 
         if not blockchain_name or not blockchain_name.strip():
             return (
@@ -48,12 +80,6 @@ def publish_item():
         if not keys:
             return (
                 jsonify({"error": "The list of keys can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
-        
-        if not stream_name or not stream_name.strip():
-            return (
-                jsonify({"error": "The stream name can't be empty!"}),
                 status.HTTP_400_BAD_REQUEST,
             )
 
@@ -77,19 +103,18 @@ def publish_item():
 
 
 """
-Configures the parameters in the param.dat using the blockchain name provided
-The name is expected in the body of the post request using the tag "name"
-The parameters are expected in the body, nested under the tag "params"
-The parameter tags are expected as follows:
-    "param blockchainName":
-    "param description":
-    "param maxBlockSize": 
-    "param targetBlockTime":
-    "param miningTurnover":
+Retrieves items that belong to the specified key from stream, passed as a stream name to 
+which the node must be subscribed.
+The following data is expected in the body of the request:
+    "blockchainName": blockchain name
+    "streamName": stream name
+    "key": key for the data to be retrieved
+    OPTIONAL: "verbose": Set verbose to true for additional information about each item’s transaction
+    OPTIONAL: "count": retrieve part of the list only ex. only 5 items
+    OPTIONAL: "start": deals with the ordering of the data retrieved, with negative start values (like the default) indicating the most recent items
+    OPTIONAL: "localOrdering": Set local-ordering to true to order items by when first seen by this node, rather than their order in the chain
 """
-
-
-@mod.route("/config_parameters/", methods=["POST"])
+@mod.route("/get_items_by_key/", methods=["GET"])
 def get_items_by_key():
     try:
         json_request = request.get_json()
@@ -100,8 +125,13 @@ def get_items_by_key():
                 status.HTTP_204_NO_CONTENT,
             )
 
-        blockchain_name = json_request["blockchainName"]
-        parameters = json_request["params"]
+        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
+        stream_name = json_request[STREAM_NAME_FIELD_NAME]
+        key = json_request[KEY_FIELD_NAME]
+        verbose = DataController.DEFAULT_VERBOSE_VALUE
+        count = DataController.DEFAULT_ITEM_COUNT_VALUE
+        start = DataController.DEFAULT_ITEM_START_VALUE
+        local_ordering = DataController.DEFAULT_LOCAL_ORDERING_VALUE
 
         if not blockchain_name or not blockchain_name.strip():
             return (
@@ -109,53 +139,51 @@ def get_items_by_key():
                 status.HTTP_400_BAD_REQUEST,
             )
 
-        if not parameters:
-            return jsonify(
-                {
-                    "error": "No parameters were supplied, please provide the required parameters!"
-                }
+        if not stream_name or not stream_name.strip():
+            return (
+                jsonify({"error": "The stream name can't be empty!"}),
+                status.HTTP_400_BAD_REQUEST,
             )
+
+        if not key or not key.strip():
+            return (
+                jsonify({"error": "The data key can't be empty!"}),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if VERBOSE_FIELD_NAME in json_request:
+            verbose = convert_to_boolean(VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME])
+        
+        if COUNT_FIELD_NAME in json_request:
+            count = convert_to_int(COUNT_FIELD_NAME, json_request[COUNT_FIELD_NAME])
+        
+        if START_FIELD_NAME in json_request:
+            start = convert_to_int(START_FIELD_NAME, json_request[START_FIELD_NAME])
+        
+        if LOCAL_ORDERING_FIELD_NAME in json_request:
+            local_ordering = convert_to_int(LOCAL_ORDERING_FIELD_NAME, json_request[LOCAL_ORDERING_FIELD_NAME])  
 
         blockchain_name = blockchain_name.strip()
-        required_parameters = [
-            "description",
-            "maxblocksize",
-            "targetblocktime",
-            "miningturnover",
-        ]
-
-        original_number_of_keys = len(parameters)
-        parameters = {
-            key: value
-            for key, value in parameters.items()
-            if key.lower() in required_parameters
-        }
-        new_number_of_keys = len(parameters)
-
-        if new_number_of_keys < original_number_of_keys:
-            return jsonify(
-                {
-                    "error": "Some of The required parameters are missing. Expecting: "
-                    + str(len(required_parameters))
-                    + " parameters, receieved: "
-                    + str(new_number_of_keys)
-                    + " parameters."
-                }
-            )
-
-        #cc.config_params(blockchain_name, parameters)
-        return jsonify({"Status": "Configurations Changed!"}), status.HTTP_200_OK
+        stream_name = stream_name.strip()
+        key = key.strip()
+        json_data = DataController.get_items_by_key(blockchain_name, stream_name, key, verbose, count, start, local_ordering)
+        return jsonify({"Data": json_data}), status.HTTP_200_OK
+    except ValueError as ex:
+        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
     except Exception as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
 
 
 """
-Deploys the created chain
-The blockchain name is expected in the body using the "blockchainName" tag
+Retrieves items in stream which match all of the specified keys in query. 
+The keys field should specify an array of keys.
+The following data is expected in the body of the request:
+    "blockchainName": blockchain name
+    "streamName": stream name
+    "keys": list of keys for the data to be retrieved
+    OPTIONAL: "verbose": Set verbose to true for additional information about each item’s transaction
 """
-
-
-@mod.route("/deploy_chain/", methods=["GET"])
+@mod.route("/get_items_by_keys/", methods=["GET"])
 def get_items_by_keys():
     try:
         json_request = request.get_json()
@@ -166,33 +194,123 @@ def get_items_by_keys():
                 status.HTTP_204_NO_CONTENT,
             )
 
-        blockchain_name = json_request["blockchainName"]
+        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
+        stream_name = json_request[STREAM_NAME_FIELD_NAME]
+        keys = json_request[KEYS_FIELD_NAME]
+        verbose = DataController.DEFAULT_VERBOSE_VALUE
+
         if not blockchain_name or not blockchain_name.strip():
             return (
                 jsonify({"error": "The blockchain name can't be empty!"}),
                 status.HTTP_400_BAD_REQUEST,
             )
 
-        blockchain_name = blockchain_name.strip()
-        #if cc.deploy_blockchain(blockchain_name):
-       #     return (
-        #        jsonify({"Status": blockchain_name + " Deployed"}),
-       #         status.HTTP_200_OK,
-       #     )
+        if not stream_name or not stream_name.strip():
+            return (
+                jsonify({"error": "The stream name can't be empty!"}),
+                status.HTTP_400_BAD_REQUEST,
+            )
 
-    except MultiChainError as ex:
-        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
+        if not keys:
+            return (
+                jsonify({"error": "The list of keys can't be empty!"}),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if VERBOSE_FIELD_NAME in json_request:
+            verbose = convert_to_boolean(VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME])
+
+        blockchain_name = blockchain_name.strip()
+        stream_name = stream_name.strip()
+        json_data = DataController.get_items_by_keys(blockchain_name, stream_name, keys, verbose)
+        return jsonify({"Data": json_data}), status.HTTP_200_OK
+    except ValueError as ex:
+        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
     except Exception as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
 
 
 """
-Returns the node address of the provided blockchain name
-The blockchain name is expected in the body using the "blockchainName" tag
+Retrieves items that belong to the specified publisher from stream.
+The following data is expected in the body of the request:
+    "blockchainName": blockchain name
+    "streamName": stream name
+    "publisher": Wallet address of the items publisher
+    OPTIONAL: "verbose": Set verbose to true for additional information about each item’s transaction
+    OPTIONAL: "count": retrieve part of the list only ex. only 5 items
+    OPTIONAL: "start": deals with the ordering of the data retrieved, with negative start values (like the default) indicating the most recent items
+    OPTIONAL: "localOrdering": Set local-ordering to true to order items by when first seen by this node, rather than their order in the chain
 """
+@mod.route("/get_items_by_publisher/", methods=["GET"])
+def get_items_by_publisher():
+    try:
+        json_request = request.get_json()
+
+        if not json_request:
+            return (
+                jsonify({"error": "The request body is empty!"}),
+                status.HTTP_204_NO_CONTENT,
+            )
+
+        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
+        stream_name = json_request[STREAM_NAME_FIELD_NAME]
+        publisher = json_request[PUBLISHER_FIELD_NAME]
+        verbose = DataController.DEFAULT_VERBOSE_VALUE
+        count = DataController.DEFAULT_ITEM_COUNT_VALUE
+        start = DataController.DEFAULT_ITEM_START_VALUE
+        local_ordering = DataController.DEFAULT_LOCAL_ORDERING_VALUE
+
+        if not blockchain_name or not blockchain_name.strip():
+            return (
+                jsonify({"error": "The blockchain name can't be empty!"}),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not stream_name or not stream_name.strip():
+            return (
+                jsonify({"error": "The stream name can't be empty!"}),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not publisher or not publisher.strip():
+            return (
+                jsonify({"error": "The publisher wallet address can't be empty!"}),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if VERBOSE_FIELD_NAME in json_request:
+            verbose = convert_to_boolean(VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME])
+        
+        if COUNT_FIELD_NAME in json_request:
+            count = convert_to_int(COUNT_FIELD_NAME, json_request[COUNT_FIELD_NAME])
+        
+        if START_FIELD_NAME in json_request:
+            start = convert_to_int(START_FIELD_NAME, json_request[START_FIELD_NAME])
+        
+        if LOCAL_ORDERING_FIELD_NAME in json_request:
+            local_ordering = convert_to_int(LOCAL_ORDERING_FIELD_NAME, json_request[LOCAL_ORDERING_FIELD_NAME])  
+
+        blockchain_name = blockchain_name.strip()
+        stream_name = stream_name.strip()
+        publisher = publisher.strip()
+        json_data = DataController.get_items_by_publisher(blockchain_name, stream_name, publisher, verbose, count, start, local_ordering)
+        return jsonify({"Data": json_data}), status.HTTP_200_OK
+    except ValueError as ex:
+        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+    except Exception as ex:
+        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
 
 
-@mod.route("/get_node_address/", methods=["GET"])
+"""
+Retrieves items in stream which match all of the specified publishers in query. 
+The publishers field should specify an array of publishers.
+The following data is expected in the body of the request:
+    "blockchainName": blockchain name
+    "streamName": stream name
+    "publishers": list of publishers wallet address for the data to be retrieved
+    OPTIONAL: "verbose": Set verbose to true for additional information about each item’s transaction
+"""
+@mod.route("/get_items_by_publishers/", methods=["GET"])
 def get_items_by_publishers():
     try:
         json_request = request.get_json()
@@ -203,22 +321,171 @@ def get_items_by_publishers():
                 status.HTTP_204_NO_CONTENT,
             )
 
-        blockchain_name = json_request["blockchainName"]
+        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
+        stream_name = json_request[STREAM_NAME_FIELD_NAME]
+        publishers = json_request[PUBLISHERS_FIELD_NAME]
+        verbose = DataController.DEFAULT_VERBOSE_VALUE
+
         if not blockchain_name or not blockchain_name.strip():
             return (
                 jsonify({"error": "The blockchain name can't be empty!"}),
                 status.HTTP_400_BAD_REQUEST,
             )
 
+        if not stream_name or not stream_name.strip():
+            return (
+                jsonify({"error": "The stream name can't be empty!"}),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not publishers:
+            return (
+                jsonify({"error": "The list of publishers can't be empty!"}),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if VERBOSE_FIELD_NAME in json_request:
+            verbose = convert_to_boolean(VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME])
+
         blockchain_name = blockchain_name.strip()
-
-        return (
-          #  jsonify({"nodeAddress": cc.get_node_address(blockchain_name)}),
-            status.HTTP_200_OK,
-        )
-
-    except MultiChainError as ex:
-        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
-
+        stream_name = stream_name.strip()
+        json_data = DataController.get_items_by_publishers(blockchain_name, stream_name, publishers, verbose)
+        return jsonify({"Data": json_data}), status.HTTP_200_OK
+    except ValueError as ex:
+        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
     except Exception as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+
+
+"""
+Retrieves items in stream. 
+The following data is expected in the body of the request:
+    "blockchainName": blockchain name
+    "streamName": stream name
+    OPTIONAL: "verbose": Set verbose to true for additional information about each item’s transaction
+    OPTIONAL: "count": retrieve part of the list only ex. only 5 items
+    OPTIONAL: "start": deals with the ordering of the data retrieved, with negative start values (like the default) indicating the most recent items
+    OPTIONAL: "localOrdering": Set local-ordering to true to order items by when first seen by this node, rather than their order in the chain
+"""
+@mod.route("/get_stream_items/", methods=["GET"])
+def get_stream_items():
+    try:
+        json_request = request.get_json()
+
+        if not json_request:
+            return (
+                jsonify({"error": "The request body is empty!"}),
+                status.HTTP_204_NO_CONTENT,
+            )
+
+        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
+        stream_name = json_request[STREAM_NAME_FIELD_NAME]
+        verbose = DataController.DEFAULT_VERBOSE_VALUE
+        count = DataController.DEFAULT_ITEM_COUNT_VALUE
+        start = DataController.DEFAULT_ITEM_START_VALUE
+        local_ordering = DataController.DEFAULT_LOCAL_ORDERING_VALUE
+
+        if not blockchain_name or not blockchain_name.strip():
+            return (
+                jsonify({"error": "The blockchain name can't be empty!"}),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not stream_name or not stream_name.strip():
+            return (
+                jsonify({"error": "The stream name can't be empty!"}),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if VERBOSE_FIELD_NAME in json_request:
+            verbose = convert_to_boolean(VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME])
+        
+        if COUNT_FIELD_NAME in json_request:
+            count = convert_to_int(COUNT_FIELD_NAME, json_request[COUNT_FIELD_NAME])
+        
+        if START_FIELD_NAME in json_request:
+            start = convert_to_int(START_FIELD_NAME, json_request[START_FIELD_NAME])
+        
+        if LOCAL_ORDERING_FIELD_NAME in json_request:
+            local_ordering = convert_to_int(LOCAL_ORDERING_FIELD_NAME, json_request[LOCAL_ORDERING_FIELD_NAME])  
+
+        blockchain_name = blockchain_name.strip()
+        stream_name = stream_name.strip()
+        json_data = DataController.get_stream_items(blockchain_name, stream_name, verbose, count, start, local_ordering)
+        return jsonify({"Data": json_data}), status.HTTP_200_OK
+    except ValueError as ex:
+        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+    except Exception as ex:
+        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+
+"""
+Provides information about publishers who have written to a stream
+The following data is expected in the body of the request:
+    "blockchainName": blockchain name
+    "streamName": stream name
+    OPTIONAL: "publishers": list of publishers wallet address. This will cause the function to only return information related to the publishers in the list
+    OPTIONAL: "verbose": Set verbose to true for additional information about each item’s transaction
+    OPTIONAL: "count": retrieve part of the list only ex. only 5 items
+    OPTIONAL: "start": deals with the ordering of the data retrieved, with negative start values (like the default) indicating the most recent items
+    OPTIONAL: "localOrdering": Set local-ordering to true to order items by when first seen by this node, rather than their order in the chain
+"""
+@mod.route("/get_stream_publishers/", methods=["GET"])
+def get_stream_publishers():
+    try:
+        json_request = request.get_json()
+
+        if not json_request:
+            return (
+                jsonify({"error": "The request body is empty!"}),
+                status.HTTP_204_NO_CONTENT,
+            )
+
+        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
+        stream_name = json_request[STREAM_NAME_FIELD_NAME]
+        publishers = DataController.DEFAULT_PUBLISHERS_LIST_CONTENT
+        verbose = DataController.DEFAULT_VERBOSE_VALUE
+        count = DataController.DEFAULT_ITEM_COUNT_VALUE
+        start = DataController.DEFAULT_ITEM_START_VALUE
+        local_ordering = DataController.DEFAULT_LOCAL_ORDERING_VALUE
+
+        if not blockchain_name or not blockchain_name.strip():
+            return (
+                jsonify({"error": "The blockchain name can't be empty!"}),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not stream_name or not stream_name.strip():
+            return (
+                jsonify({"error": "The stream name can't be empty!"}),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if PUBLISHERS_FIELD_NAME in json_request:
+            publishers = json_request[PUBLISHERS_FIELD_NAME]
+            if not publishers:
+                return (
+                    jsonify({"error": "The list of publishers can't be empty!"}),
+                    status.HTTP_400_BAD_REQUEST,
+                )
+        
+        if VERBOSE_FIELD_NAME in json_request:
+            verbose = convert_to_boolean(VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME])
+        
+        if COUNT_FIELD_NAME in json_request:
+            count = convert_to_int(COUNT_FIELD_NAME, json_request[COUNT_FIELD_NAME])
+        
+        if START_FIELD_NAME in json_request:
+            start = convert_to_int(START_FIELD_NAME, json_request[START_FIELD_NAME])
+        
+        if LOCAL_ORDERING_FIELD_NAME in json_request:
+            local_ordering = convert_to_int(LOCAL_ORDERING_FIELD_NAME, json_request[LOCAL_ORDERING_FIELD_NAME])  
+
+        blockchain_name = blockchain_name.strip()
+        stream_name = stream_name.strip()
+        json_data = DataController.get_stream_publishers(blockchain_name, stream_name, publishers, verbose, count, start, local_ordering)
+        return jsonify({"Data": json_data}), status.HTTP_200_OK
+    except ValueError as ex:
+        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+    except Exception as ex:
+        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+

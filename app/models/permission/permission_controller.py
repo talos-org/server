@@ -4,30 +4,27 @@ import json
 
 
 class PermissionController:
-    def __init__(self, blockchain_name: str):
-        blockchain_name = blockchain_name.strip()
+    MULTICHAIN_ARG = "multichain-cli"
+    GRANT_ARG = "grant"
+    REVOKE_ARG = "revoke"
+    GET_PERMISSION_ARG = "listpermissions"
+    GLOBAL_PERMISSIONS_LIST = {
+        "connect",
+        "send",
+        "receive",
+        "issue",
+        "create",
+        "issue",
+        "mine",
+        "activate",
+        "admin",
+    }
+    STREAM_PERMISSIONS_LIST = {"write", "activate", "admin"}
 
-        if not blockchain_name:
-            raise ValueError("Blockchain name can't be empty")
-
-        self._multichain_arg = ["multichain-cli", blockchain_name]
-        self._grant_arg = self._multichain_arg + ["grant"]
-        self._revoke_arg = self._multichain_arg + ["revoke"]
-        self._get_permissions_arg = self._multichain_arg + ["listpermissions"]
-        self._GLOBAL_PERMISSIONS_LIST = {
-            "connect",
-            "send",
-            "receive",
-            "issue",
-            "create",
-            "issue",
-            "mine",
-            "activate",
-            "admin",
-        }
-        self._STREAM_PERMISSIONS_LIST = {"write", "activate", "admin"}
-
-    def grant_global_permission(self, addresses: list, permissions: list):
+    @staticmethod
+    def grant_global_permission(
+        blockchain_name: str, addresses: list, permissions: list
+    ):
         """
         Grants permissions to a list of addresses. 
         Set permissions to a list of connect, send, receive, create, issue, mine, 
@@ -35,6 +32,10 @@ class PermissionController:
         Returns the txid of the transaction granting the permissions.
         """
         try:
+            blockchain_name = blockchain_name.strip()
+            if not blockchain_name:
+                raise ValueError("Blockchain name can't be empty")
+
             addresses = [address.strip() for address in addresses if address.strip()]
             if not addresses:
                 raise ValueError("The list of addresses is empty")
@@ -45,12 +46,20 @@ class PermissionController:
             if not permissions:
                 raise ValueError("The list of permissions is empty")
 
-            if not set(permissions).issubset(self._GLOBAL_PERMISSIONS_LIST):
+            if not set(permissions).issubset(
+                PermissionController.GLOBAL_PERMISSIONS_LIST
+            ):
                 raise ValueError(
                     "The permission(s) proivded: " + permissions + " does not exist."
                 )
 
-            args = self._grant_arg + [",".join(addresses), ",".join(permissions)]
+            args = [
+                PermissionController.MULTICHAIN_ARG,
+                blockchain_name,
+                PermissionController.grant_global_permission,
+                ",".join(addresses),
+                ",".join(permissions),
+            ]
             output = run(args, check=True, capture_output=True)
 
             return output.stdout
@@ -59,13 +68,20 @@ class PermissionController:
         except Exception as err:
             raise err
 
-    def grant_stream_permission(self, address: str, stream_name: str, permission: str):
+    @staticmethod
+    def grant_stream_permission(
+        blockchain_name: str, address: str, stream_name: str, permission: str
+    ):
         """
         Grants permission to an address for a stream. set permission to one of write, 
         activate, admin.
         Returns the txid of the transaction granting the permissions.
         """
         try:
+            blockchain_name = blockchain_name.strip()
+            if not blockchain_name:
+                raise ValueError("Blockchain name can't be empty")
+
             address = address.strip()
             stream_name = stream_name.strip()
             permission = permission.strip()
@@ -77,12 +93,18 @@ class PermissionController:
             if not permission:
                 raise ValueError("The permisison is empty")
 
-            if permission.lower() not in self._STREAM_PERMISSIONS_LIST:
+            if permission.lower() not in PermissionController.STREAM_PERMISSIONS_LIST:
                 raise ValueError(
                     "The permission provided:" + permission + " does not exist."
                 )
 
-            args = self._grant_arg + [address, stream_name + "." + permission.lower()]
+            args = [
+                PermissionController.MULTICHAIN_ARG,
+                blockchain_name,
+                PermissionController.grant_global_permission,
+                address,
+                stream_name + "." + permission.lower(),
+            ]
             output = run(args, check=True, capture_output=True)
 
             return output.stdout
@@ -91,8 +113,12 @@ class PermissionController:
         except Exception as err:
             raise err
 
+    @staticmethod
     def get_permissions(
-        self, permissions: list = None, addresses: list = None, verbose: bool = False
+        blockchain_name: str,
+        permissions: list = None,
+        addresses: list = None,
+        verbose: bool = False,
     ):
         """
         Returns a list of all permissions which have been explicitly granted to addresses. 
@@ -103,6 +129,9 @@ class PermissionController:
         and the pending field lists permission changes which are waiting to reach consensus.
         """
         try:
+            blockchain_name = blockchain_name.strip()
+            if not blockchain_name:
+                raise ValueError("Blockchain name can't be empty")
 
             permission_selector = "*"
             if permissions is not None:
@@ -113,7 +142,9 @@ class PermissionController:
                 ]
                 if not permissions:
                     raise ValueError("The list of permissions is empty")
-                if not set(permissions).issubset(self._GLOBAL_PERMISSIONS_LIST):
+                if not set(permissions).issubset(
+                    PermissionController.GLOBAL_PERMISSIONS_LIST
+                ):
                     raise ValueError(
                         "The permission(s) proivded: "
                         + permissions
@@ -131,7 +162,10 @@ class PermissionController:
                     raise ValueError("The list of addresses is empty")
                 address_selector = ",".join(addresses)
 
-            args = self._get_permissions_arg + [
+            args = [
+                PermissionController.MULTICHAIN_ARG,
+                blockchain_name,
+                PermissionController.GET_PERMISSION_ARG,
                 permission_selector,
                 address_selector,
                 json.dumps(verbose),
@@ -144,7 +178,10 @@ class PermissionController:
         except Exception as err:
             raise err
 
-    def revoke_global_permission(self, addresses: list, permissions: list):
+    @staticmethod
+    def revoke_global_permission(
+        blockchain_name: str, addresses: list, permissions: list
+    ):
         """
         Revokes permissions from a list of addresses. 
         Set permissions to a list of connect, send, receive, create, issue, mine, 
@@ -152,6 +189,10 @@ class PermissionController:
         Returns the txid of transaction revoking the permissions. 
         """
         try:
+            blockchain_name = blockchain_name.strip()
+            if not blockchain_name:
+                raise ValueError("Blockchain name can't be empty")
+
             addresses = [address.strip() for address in addresses if address.strip()]
             if not addresses:
                 raise ValueError("The list of addresses is empty")
@@ -162,12 +203,20 @@ class PermissionController:
             if not permissions:
                 raise ValueError("The list of permissions is empty")
 
-            if not set(permissions).issubset(self._GLOBAL_PERMISSIONS_LIST):
+            if not set(permissions).issubset(
+                PermissionController.GLOBAL_PERMISSIONS_LIST
+            ):
                 raise ValueError(
                     "The permission(s) proivded: " + permissions + " does not exist."
                 )
 
-            args = self._revoke_arg + [",".join(addresses), ",".join(permissions)]
+            args = [
+                PermissionController.MULTICHAIN_ARG,
+                blockchain_name,
+                PermissionController.REVOKE_ARG,
+                ",".join(addresses),
+                ",".join(permissions),
+            ]
             output = run(args, check=True, capture_output=True)
 
             return output.stdout
@@ -176,13 +225,20 @@ class PermissionController:
         except Exception as err:
             raise err
 
-    def revoke_stream_permission(self, address: str, stream_name: str, permission: str):
+    @staticmethod
+    def revoke_stream_permission(
+        blockchain_name: str, address: str, stream_name: str, permission: str
+    ):
         """
         Revokes permissions from an address for a stream. 
         set permission to one of write, activate, admin.
         Returns the txid of transaction revoking the permissions. 
         """
         try:
+            blockchain_name = blockchain_name.strip()
+            if not blockchain_name:
+                raise ValueError("Blockchain name can't be empty")
+
             address = address.strip()
             stream_name = stream_name.strip()
             permission = permission.strip()
@@ -196,12 +252,18 @@ class PermissionController:
             if not permission:
                 raise ValueError("The permission is empty")
 
-            if permission.lower() not in self._STREAM_PERMISSIONS_LIST:
+            if permission.lower() not in PermissionController.STREAM_PERMISSIONS_LIST:
                 raise ValueError(
                     "The permission provided: " + permission + " does not exist."
                 )
 
-            args = self._revoke_arg + [address, stream_name + "." + permission.lower()]
+            args = [
+                PermissionController.MULTICHAIN_ARG,
+                blockchain_name,
+                PermissionController.REVOKE_ARG,
+                address,
+                stream_name + "." + permission.lower(),
+            ]
             output = run(args, check=True, capture_output=True)
 
             return output.stdout

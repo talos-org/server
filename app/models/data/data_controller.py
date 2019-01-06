@@ -128,7 +128,10 @@ class DataController:
 
     @staticmethod
     def get_items_by_keys(
-        blockchain_name: str, stream: str, keys: list, verbose: bool = DEFAULT_VERBOSE_VALUE
+        blockchain_name: str,
+        stream: str,
+        keys: list,
+        verbose: bool = DEFAULT_VERBOSE_VALUE,
     ):
         """
         Retrieves items in stream which match all of the specified keys in query. 
@@ -187,7 +190,10 @@ class DataController:
 
     @staticmethod
     def get_items_by_publishers(
-        blockchain_name: str, stream: str, publishers: list, verbose: bool = DEFAULT_VERBOSE_VALUE
+        blockchain_name: str,
+        stream: str,
+        publishers: list,
+        verbose: bool = DEFAULT_VERBOSE_VALUE,
     ):
         """
         Retrieves items in stream which match all of the specified publishers in query. 

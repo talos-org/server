@@ -13,33 +13,36 @@ STREAM_NAME_FIELD_NAME = "streamName"
 DATA_FIELD_NAME = "data"
 LOCAL_ORDERING_FIELD_NAME = "localOrdering"
 PUBLISHER_FIELD_NAME = "publisher"
-PUBLISHERS_FIELD_NAME = "publishers" 
+PUBLISHERS_FIELD_NAME = "publishers"
 KEY_FIELD_NAME = "key"
 KEYS_FIELD_NAME = "keys"
 
 mod = Blueprint("data", __name__)
 
 
-def convert_to_boolean(field_name:str, value: str):
+def convert_to_boolean(field_name: str, value: str):
     try:
         if value in ["True", "true"]:
             return True
         elif value in ["False", "false"]:
             return False
-        raise ValueError("The value provided for " + field_name + " is not a valid boolean value")
+        raise ValueError(
+            "The value provided for " + field_name + " is not a valid boolean value"
+        )
     except ValueError as ex:
         raise ex
     except Exception as ex:
         raise ex
-    
 
-def convert_to_int(field_name:str, value:str):
+
+def convert_to_int(field_name: str, value: str):
     try:
         return int(value)
     except ValueError as ex:
         raise ValueError("The value provided for " + field_name + " is not an integer")
     except Exception as ex:
         raise ex
+
 
 """
 Publishes an item to a stream
@@ -49,6 +52,8 @@ The following data is expected in the body of the request:
     "keys": a list of keys for the data
     "data": the data to be stored 
 """
+
+
 @mod.route("/publish_item/", methods=["POST"])
 def publish_item():
     try:
@@ -93,9 +98,12 @@ def publish_item():
         stream_name = stream_name.strip()
         json_data = json.dumps(data)
         DataController.publish_item(blockchain_name, stream_name, keys, json_data)
-        return jsonify({"Status":"Data published!"}), status.HTTP_200_OK
+        return jsonify({"Status": "Data published!"}), status.HTTP_200_OK
     except ValueError as ex:
-        return jsonify({"error": "The data is not a valid JSON"}), status.HTTP_400_BAD_REQUEST
+        return (
+            jsonify({"error": "The data is not a valid JSON"}),
+            status.HTTP_400_BAD_REQUEST,
+        )
     except MultiChainError as ex:
         return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
     except Exception as ex:
@@ -114,6 +122,8 @@ The following data is expected in the body of the request:
     OPTIONAL: "start": deals with the ordering of the data retrieved, with negative start values (like the default) indicating the most recent items
     OPTIONAL: "localOrdering": Set local-ordering to true to order items by when first seen by this node, rather than their order in the chain
 """
+
+
 @mod.route("/get_items_by_key/", methods=["GET"])
 def get_items_by_key():
     try:
@@ -152,21 +162,27 @@ def get_items_by_key():
             )
 
         if VERBOSE_FIELD_NAME in json_request:
-            verbose = convert_to_boolean(VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME])
-        
+            verbose = convert_to_boolean(
+                VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME]
+            )
+
         if COUNT_FIELD_NAME in json_request:
             count = convert_to_int(COUNT_FIELD_NAME, json_request[COUNT_FIELD_NAME])
-        
+
         if START_FIELD_NAME in json_request:
             start = convert_to_int(START_FIELD_NAME, json_request[START_FIELD_NAME])
-        
+
         if LOCAL_ORDERING_FIELD_NAME in json_request:
-            local_ordering = convert_to_int(LOCAL_ORDERING_FIELD_NAME, json_request[LOCAL_ORDERING_FIELD_NAME])  
+            local_ordering = convert_to_int(
+                LOCAL_ORDERING_FIELD_NAME, json_request[LOCAL_ORDERING_FIELD_NAME]
+            )
 
         blockchain_name = blockchain_name.strip()
         stream_name = stream_name.strip()
         key = key.strip()
-        json_data = DataController.get_items_by_key(blockchain_name, stream_name, key, verbose, count, start, local_ordering)
+        json_data = DataController.get_items_by_key(
+            blockchain_name, stream_name, key, verbose, count, start, local_ordering
+        )
         return jsonify({"Data": json_data}), status.HTTP_200_OK
     except ValueError as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
@@ -183,6 +199,8 @@ The following data is expected in the body of the request:
     "keys": list of keys for the data to be retrieved
     OPTIONAL: "verbose": Set verbose to true for additional information about each item’s transaction
 """
+
+
 @mod.route("/get_items_by_keys/", methods=["GET"])
 def get_items_by_keys():
     try:
@@ -218,11 +236,15 @@ def get_items_by_keys():
             )
 
         if VERBOSE_FIELD_NAME in json_request:
-            verbose = convert_to_boolean(VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME])
+            verbose = convert_to_boolean(
+                VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME]
+            )
 
         blockchain_name = blockchain_name.strip()
         stream_name = stream_name.strip()
-        json_data = DataController.get_items_by_keys(blockchain_name, stream_name, keys, verbose)
+        json_data = DataController.get_items_by_keys(
+            blockchain_name, stream_name, keys, verbose
+        )
         return jsonify({"Data": json_data}), status.HTTP_200_OK
     except ValueError as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
@@ -241,6 +263,8 @@ The following data is expected in the body of the request:
     OPTIONAL: "start": deals with the ordering of the data retrieved, with negative start values (like the default) indicating the most recent items
     OPTIONAL: "localOrdering": Set local-ordering to true to order items by when first seen by this node, rather than their order in the chain
 """
+
+
 @mod.route("/get_items_by_publisher/", methods=["GET"])
 def get_items_by_publisher():
     try:
@@ -279,21 +303,33 @@ def get_items_by_publisher():
             )
 
         if VERBOSE_FIELD_NAME in json_request:
-            verbose = convert_to_boolean(VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME])
-        
+            verbose = convert_to_boolean(
+                VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME]
+            )
+
         if COUNT_FIELD_NAME in json_request:
             count = convert_to_int(COUNT_FIELD_NAME, json_request[COUNT_FIELD_NAME])
-        
+
         if START_FIELD_NAME in json_request:
             start = convert_to_int(START_FIELD_NAME, json_request[START_FIELD_NAME])
-        
+
         if LOCAL_ORDERING_FIELD_NAME in json_request:
-            local_ordering = convert_to_int(LOCAL_ORDERING_FIELD_NAME, json_request[LOCAL_ORDERING_FIELD_NAME])  
+            local_ordering = convert_to_int(
+                LOCAL_ORDERING_FIELD_NAME, json_request[LOCAL_ORDERING_FIELD_NAME]
+            )
 
         blockchain_name = blockchain_name.strip()
         stream_name = stream_name.strip()
         publisher = publisher.strip()
-        json_data = DataController.get_items_by_publisher(blockchain_name, stream_name, publisher, verbose, count, start, local_ordering)
+        json_data = DataController.get_items_by_publisher(
+            blockchain_name,
+            stream_name,
+            publisher,
+            verbose,
+            count,
+            start,
+            local_ordering,
+        )
         return jsonify({"Data": json_data}), status.HTTP_200_OK
     except ValueError as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
@@ -310,6 +346,8 @@ The following data is expected in the body of the request:
     "publishers": list of publishers wallet address for the data to be retrieved
     OPTIONAL: "verbose": Set verbose to true for additional information about each item’s transaction
 """
+
+
 @mod.route("/get_items_by_publishers/", methods=["GET"])
 def get_items_by_publishers():
     try:
@@ -345,11 +383,15 @@ def get_items_by_publishers():
             )
 
         if VERBOSE_FIELD_NAME in json_request:
-            verbose = convert_to_boolean(VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME])
+            verbose = convert_to_boolean(
+                VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME]
+            )
 
         blockchain_name = blockchain_name.strip()
         stream_name = stream_name.strip()
-        json_data = DataController.get_items_by_publishers(blockchain_name, stream_name, publishers, verbose)
+        json_data = DataController.get_items_by_publishers(
+            blockchain_name, stream_name, publishers, verbose
+        )
         return jsonify({"Data": json_data}), status.HTTP_200_OK
     except ValueError as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
@@ -367,6 +409,8 @@ The following data is expected in the body of the request:
     OPTIONAL: "start": deals with the ordering of the data retrieved, with negative start values (like the default) indicating the most recent items
     OPTIONAL: "localOrdering": Set local-ordering to true to order items by when first seen by this node, rather than their order in the chain
 """
+
+
 @mod.route("/get_stream_items/", methods=["GET"])
 def get_stream_items():
     try:
@@ -398,25 +442,32 @@ def get_stream_items():
             )
 
         if VERBOSE_FIELD_NAME in json_request:
-            verbose = convert_to_boolean(VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME])
-        
+            verbose = convert_to_boolean(
+                VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME]
+            )
+
         if COUNT_FIELD_NAME in json_request:
             count = convert_to_int(COUNT_FIELD_NAME, json_request[COUNT_FIELD_NAME])
-        
+
         if START_FIELD_NAME in json_request:
             start = convert_to_int(START_FIELD_NAME, json_request[START_FIELD_NAME])
-        
+
         if LOCAL_ORDERING_FIELD_NAME in json_request:
-            local_ordering = convert_to_int(LOCAL_ORDERING_FIELD_NAME, json_request[LOCAL_ORDERING_FIELD_NAME])  
+            local_ordering = convert_to_int(
+                LOCAL_ORDERING_FIELD_NAME, json_request[LOCAL_ORDERING_FIELD_NAME]
+            )
 
         blockchain_name = blockchain_name.strip()
         stream_name = stream_name.strip()
-        json_data = DataController.get_stream_items(blockchain_name, stream_name, verbose, count, start, local_ordering)
+        json_data = DataController.get_stream_items(
+            blockchain_name, stream_name, verbose, count, start, local_ordering
+        )
         return jsonify({"Data": json_data}), status.HTTP_200_OK
     except ValueError as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
     except Exception as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+
 
 """
 Provides information about publishers who have written to a stream
@@ -429,6 +480,8 @@ The following data is expected in the body of the request:
     OPTIONAL: "start": deals with the ordering of the data retrieved, with negative start values (like the default) indicating the most recent items
     OPTIONAL: "localOrdering": Set local-ordering to true to order items by when first seen by this node, rather than their order in the chain
 """
+
+
 @mod.route("/get_stream_publishers/", methods=["GET"])
 def get_stream_publishers():
     try:
@@ -467,22 +520,34 @@ def get_stream_publishers():
                     jsonify({"error": "The list of publishers can't be empty!"}),
                     status.HTTP_400_BAD_REQUEST,
                 )
-        
+
         if VERBOSE_FIELD_NAME in json_request:
-            verbose = convert_to_boolean(VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME])
-        
+            verbose = convert_to_boolean(
+                VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME]
+            )
+
         if COUNT_FIELD_NAME in json_request:
             count = convert_to_int(COUNT_FIELD_NAME, json_request[COUNT_FIELD_NAME])
-        
+
         if START_FIELD_NAME in json_request:
             start = convert_to_int(START_FIELD_NAME, json_request[START_FIELD_NAME])
-        
+
         if LOCAL_ORDERING_FIELD_NAME in json_request:
-            local_ordering = convert_to_int(LOCAL_ORDERING_FIELD_NAME, json_request[LOCAL_ORDERING_FIELD_NAME])  
+            local_ordering = convert_to_int(
+                LOCAL_ORDERING_FIELD_NAME, json_request[LOCAL_ORDERING_FIELD_NAME]
+            )
 
         blockchain_name = blockchain_name.strip()
         stream_name = stream_name.strip()
-        json_data = DataController.get_stream_publishers(blockchain_name, stream_name, publishers, verbose, count, start, local_ordering)
+        json_data = DataController.get_stream_publishers(
+            blockchain_name,
+            stream_name,
+            publishers,
+            verbose,
+            count,
+            start,
+            local_ordering,
+        )
         return jsonify({"Data": json_data}), status.HTTP_200_OK
     except ValueError as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST

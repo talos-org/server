@@ -5,7 +5,6 @@ class MultiChainError(Exception):
     def __init__(self, message: str):
         super().__init__(message.decode())
         self.message_parts = self.__initialize_message_parts(message.decode())
-        print(self.message_parts)
 
     def __initialize_message_parts(self, message: str):
         return list(filter(None, message.split("\n")))

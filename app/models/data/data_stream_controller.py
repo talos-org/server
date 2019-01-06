@@ -95,7 +95,9 @@ class DataStreamController:
             raise err
 
     @staticmethod
-    def subscribe(blockchain_name: str, streams: list, rescan: bool = DEFAULT_RESCAN_VALUE):
+    def subscribe(
+        blockchain_name: str, streams: list, rescan: bool = DEFAULT_RESCAN_VALUE
+    ):
         """
         Instructs the node to start tracking one or more stream(s). 
         These are specified using an array of one or more items. 

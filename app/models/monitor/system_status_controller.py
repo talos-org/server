@@ -56,7 +56,7 @@ class SystemStatusController:
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
         except Exception as err:
-            print(err)
+            raise err
 
     @staticmethod
     def get_wallet_address(blockchain_name: str):
@@ -85,7 +85,7 @@ class SystemStatusController:
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
         except Exception as err:
-            print(err)
+            raise err
 
     @staticmethod
     def get_inactive_nodes(blockchain_name: str, nodes_connect_permisison: list):
@@ -136,4 +136,4 @@ class SystemStatusController:
             #
             return nodes_address.difference(connectable_nodes_address)
         except Exception as err:
-            print(err)
+            raise err

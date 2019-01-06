@@ -17,26 +17,29 @@ RESCAN_FIELD_NAME = "rescan"
 mod = Blueprint("data_stream", __name__)
 
 
-def convert_to_boolean(field_name:str, value: str):
+def convert_to_boolean(field_name: str, value: str):
     try:
         if value in ["True", "true"]:
             return True
         elif value in ["False", "false"]:
             return False
-        raise ValueError("The value provided for " + field_name + " is not a valid boolean value")
+        raise ValueError(
+            "The value provided for " + field_name + " is not a valid boolean value"
+        )
     except ValueError as ex:
         raise ex
     except Exception as ex:
         raise ex
-    
 
-def convert_to_int(field_name:str, value:str):
+
+def convert_to_int(field_name: str, value: str):
     try:
         return int(value)
     except ValueError as ex:
         raise ValueError("The value provided for " + field_name + " is not an integer")
     except Exception as ex:
         raise ex
+
 
 """
 Creates a new stream on the blockchain.
@@ -46,6 +49,8 @@ The following data is expected in the body of the request:
     "isOpen":  If open is true then anyone with global send permissions can publish to the stream, otherwise publishers must be explicitly 
     granted per-stream write permissions
 """
+
+
 @mod.route("/create_stream/", methods=["POST"])
 def create_stream():
     try:
@@ -59,7 +64,9 @@ def create_stream():
 
         blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
         stream_name = json_request[STREAM_NAME_FIELD_NAME]
-        is_open = convert_to_boolean(IS_OPEN_FIELD_NAME, json_request[IS_OPEN_FIELD_NAME])
+        is_open = convert_to_boolean(
+            IS_OPEN_FIELD_NAME, json_request[IS_OPEN_FIELD_NAME]
+        )
 
         if not blockchain_name or not blockchain_name.strip():
             return (
@@ -78,7 +85,10 @@ def create_stream():
         DataStreamController.create_stream(blockchain_name, stream_name, is_open)
         return jsonify({"Status": stream_name + " created!"}), status.HTTP_200_OK
     except ValueError as ex:
-        return jsonify({"error": "The data is not a valid JSON"}), status.HTTP_400_BAD_REQUEST
+        return (
+            jsonify({"error": "The data is not a valid JSON"}),
+            status.HTTP_400_BAD_REQUEST,
+        )
     except MultiChainError as ex:
         return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
     except Exception as ex:
@@ -94,6 +104,8 @@ The following data is expected in the body of the request:
     OPTIONAL: "count": retrieve part of the list only ex. only 5 items
     OPTIONAL: "start": deals with the ordering of the data retrieved, with negative start values (like the default) indicating the most recent items
 """
+
+
 @mod.route("/get_streams/", methods=["GET"])
 def get_streams():
     try:
@@ -118,19 +130,23 @@ def get_streams():
             )
 
         if VERBOSE_FIELD_NAME in json_request:
-            verbose = convert_to_boolean(VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME])
-        
+            verbose = convert_to_boolean(
+                VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME]
+            )
+
         if COUNT_FIELD_NAME in json_request:
             count = convert_to_int(COUNT_FIELD_NAME, json_request[COUNT_FIELD_NAME])
-        
+
         if START_FIELD_NAME in json_request:
             start = convert_to_int(START_FIELD_NAME, json_request[START_FIELD_NAME])
-        
+
         if STREAMS_FIELD_NAME in json_request:
             streams = json_request[STREAMS_FIELD_NAME]
 
         blockchain_name = blockchain_name.strip()
-        json_data = DataStreamController.get_streams(blockchain_name, streams, verbose, count, start)
+        json_data = DataStreamController.get_streams(
+            blockchain_name, streams, verbose, count, start
+        )
         return jsonify({"Data": json_data}), status.HTTP_200_OK
     except ValueError as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
@@ -146,6 +162,8 @@ The following data is expected in the body of the request:
     OPTIONAL: "rescan": Set rescan to true to cause the node to reindex all items from when the streams were created, 
     as well as those in other subscribed entities
 """
+
+
 @mod.route("/subscribe/", methods=["GET"])
 def subscribe():
     try:
@@ -174,13 +192,18 @@ def subscribe():
             )
 
         if RESCAN_FIELD_NAME in json_request:
-            rescan = convert_to_boolean(RESCAN_FIELD_NAME, json_request[RESCAN_FIELD_NAME])
+            rescan = convert_to_boolean(
+                RESCAN_FIELD_NAME, json_request[RESCAN_FIELD_NAME]
+            )
 
         blockchain_name = blockchain_name.strip()
         result = DataStreamController.subscribe(blockchain_name, streams, rescan)
         if result:
             return jsonify({"Status": "Subscribed successfully!"}), status.HTTP_200_OK
-        return jsonify({"Status": "Failed to subscribe to stream(s)"}), status.HTTP_417_EXPECTATION_FAILED
+        return (
+            jsonify({"Status": "Failed to subscribe to stream(s)"}),
+            status.HTTP_417_EXPECTATION_FAILED,
+        )
     except ValueError as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
     except Exception as ex:
@@ -193,6 +216,8 @@ The following data is expected in the body of the request:
     "blockchainName": blockchain name
     "streams": list of streams to unsubscribe from
 """
+
+
 @mod.route("/unsubscribe/", methods=["GET"])
 def unsubscribe():
     try:
@@ -223,7 +248,10 @@ def unsubscribe():
         result = DataStreamController.unsubscribe(blockchain_name, streams)
         if result:
             return jsonify({"Status": "Unsubscribed successfully!"}), status.HTTP_200_OK
-        return jsonify({"Status": "Failed to unsubscribe from stream(s)"}), status.HTTP_417_EXPECTATION_FAILED
+        return (
+            jsonify({"Status": "Failed to unsubscribe from stream(s)"}),
+            status.HTTP_417_EXPECTATION_FAILED,
+        )
     except ValueError as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
     except Exception as ex:
@@ -237,6 +265,8 @@ The following data is expected in the body of the request:
     "blockchainName": blockchain name
     "streams": list of streams to resubscribe to
 """
+
+
 @mod.route("/resubscribe/", methods=["GET"])
 def resubscribe():
     try:
@@ -267,8 +297,12 @@ def resubscribe():
         result = DataStreamController.resubscribe(blockchain_name, streams)
         if result:
             return jsonify({"Status": "resubscribed successfully!"}), status.HTTP_200_OK
-        return jsonify({"Status": "Failed to resubscribe to stream(s)"}), status.HTTP_417_EXPECTATION_FAILED
+        return (
+            jsonify({"Status": "Failed to resubscribe to stream(s)"}),
+            status.HTTP_417_EXPECTATION_FAILED,
+        )
     except ValueError as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
     except Exception as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+

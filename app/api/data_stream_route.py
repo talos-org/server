@@ -12,6 +12,7 @@ BLOCKCHAIN_NAME_FIELD_NAME = "blockchainName"
 STREAM_NAME_FIELD_NAME = "streamName"
 IS_OPEN_FIELD_NAME = "isOpen"
 STREAMS_FIELD_NAME = "streams"
+STREAMS_PARAMETER_NAME = STREAMS_FIELD_NAME + "[]"
 RESCAN_FIELD_NAME = "rescan"
 
 mod = Blueprint("data_stream", __name__)
@@ -19,9 +20,9 @@ mod = Blueprint("data_stream", __name__)
 
 def convert_to_boolean(field_name: str, value: str):
     try:
-        if value in ["True", "true"]:
+        if value in ["True", "true", True]:
             return True
-        elif value in ["False", "false"]:
+        elif value in ["False", "false", False]:
             return False
         raise ValueError(
             "The value provided for " + field_name + " is not a valid boolean value"
@@ -59,7 +60,43 @@ def create_stream():
         if not json_request:
             return (
                 jsonify({"error": "The request body is empty!"}),
-                status.HTTP_204_NO_CONTENT,
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
+            return (
+                jsonify(
+                    {
+                        "error": "The "
+                        + BLOCKCHAIN_NAME_FIELD_NAME
+                        + " field was not found in the request!"
+                    }
+                ),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not STREAM_NAME_FIELD_NAME in json_request:
+            return (
+                jsonify(
+                    {
+                        "error": "The "
+                        + STREAM_NAME_FIELD_NAME
+                        + " field was not found in the request!"
+                    }
+                ),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not IS_OPEN_FIELD_NAME in json_request:
+            return (
+                jsonify(
+                    {
+                        "error": "The "
+                        + IS_OPEN_FIELD_NAME
+                        + " field was not found in the request!"
+                    }
+                ),
+                status.HTTP_400_BAD_REQUEST,
             )
 
         blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
@@ -97,7 +134,7 @@ def create_stream():
 
 """
 Returns information about streams created on the blockchain
-The following data is expected in the body of the request:
+The following data is expected to be passed in as query parameters:
     "blockchainName": blockchain name
     OPTIONAL: "streams": list of stream names. This will cause the function to retrieve only the information about the streams in the list
     OPTIONAL: "verbose": Set verbose to true for additional information about each item’s transaction
@@ -109,19 +146,31 @@ The following data is expected in the body of the request:
 @mod.route("/get_streams/", methods=["GET"])
 def get_streams():
     try:
-        json_request = request.get_json()
+        request_args = request.args
 
-        if not json_request:
+        if not request_args:
             return (
-                jsonify({"error": "The request body is empty!"}),
-                status.HTTP_204_NO_CONTENT,
+                jsonify({"error": "No parameters were passed!"}),
+                status.HTTP_400_BAD_REQUEST,
             )
 
-        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
+        blockchain_name = request_args.get(BLOCKCHAIN_NAME_FIELD_NAME)
         streams = DataStreamController.DEFAULT_STREAMS_LIST_CONTENT
         verbose = DataStreamController.DEFAULT_VERBOSE_VALUE
         count = DataStreamController.DEFAULT_STREAM_COUNT_VALUE
         start = DataStreamController.DEFAULT_STREAM_START_VALUE
+
+        if blockchain_name is None:
+            return (
+                jsonify(
+                    {
+                        "error": "The "
+                        + BLOCKCHAIN_NAME_FIELD_NAME
+                        + " parameter was not found in the request!"
+                    }
+                ),
+                status.HTTP_400_BAD_REQUEST,
+            )
 
         if not blockchain_name or not blockchain_name.strip():
             return (
@@ -129,19 +178,31 @@ def get_streams():
                 status.HTTP_400_BAD_REQUEST,
             )
 
-        if VERBOSE_FIELD_NAME in json_request:
+        if not request_args.getlist(STREAMS_PARAMETER_NAME) is None:
+            streams = request_args.getlist(STREAMS_PARAMETER_NAME)
+
+            if not streams:
+                return (
+                    jsonify({"error": "The list of streams can't be empty!"}),
+                    status.HTTP_400_BAD_REQUEST,
+                )
+
+            if not isinstance(streams, list):
+                return (
+                    jsonify({"error": "You must pass a list of streams"}),
+                    status.HTTP_400_BAD_REQUEST,
+                )
+
+        if not request_args.get(VERBOSE_FIELD_NAME) is None:
             verbose = convert_to_boolean(
-                VERBOSE_FIELD_NAME, json_request[VERBOSE_FIELD_NAME]
+                VERBOSE_FIELD_NAME, request_args.get(VERBOSE_FIELD_NAME)
             )
 
-        if COUNT_FIELD_NAME in json_request:
-            count = convert_to_int(COUNT_FIELD_NAME, json_request[COUNT_FIELD_NAME])
+        if not request_args.get(COUNT_FIELD_NAME) is None:
+            count = convert_to_int(COUNT_FIELD_NAME, request_args.get(COUNT_FIELD_NAME))
 
-        if START_FIELD_NAME in json_request:
-            start = convert_to_int(START_FIELD_NAME, json_request[START_FIELD_NAME])
-
-        if STREAMS_FIELD_NAME in json_request:
-            streams = json_request[STREAMS_FIELD_NAME]
+        if not request_args.get(START_FIELD_NAME) is None:
+            start = convert_to_int(START_FIELD_NAME, request_args.get(START_FIELD_NAME))
 
         blockchain_name = blockchain_name.strip()
         json_data = DataStreamController.get_streams(
@@ -164,7 +225,7 @@ The following data is expected in the body of the request:
 """
 
 
-@mod.route("/subscribe/", methods=["GET"])
+@mod.route("/subscribe/", methods=["POST"])
 def subscribe():
     try:
         json_request = request.get_json()
@@ -172,7 +233,31 @@ def subscribe():
         if not json_request:
             return (
                 jsonify({"error": "The request body is empty!"}),
-                status.HTTP_204_NO_CONTENT,
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
+            return (
+                jsonify(
+                    {
+                        "error": "The "
+                        + BLOCKCHAIN_NAME_FIELD_NAME
+                        + " field was not found in the request!"
+                    }
+                ),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not STREAMS_FIELD_NAME in json_request:
+            return (
+                jsonify(
+                    {
+                        "error": "The "
+                        + STREAMS_FIELD_NAME
+                        + " field was not found in the request!"
+                    }
+                ),
+                status.HTTP_400_BAD_REQUEST,
             )
 
         blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
@@ -188,6 +273,12 @@ def subscribe():
         if not streams:
             return (
                 jsonify({"error": "The list of streams can't be empty!"}),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not isinstance(streams, list):
+            return (
+                jsonify({"error": "You must pass a list of streams"}),
                 status.HTTP_400_BAD_REQUEST,
             )
 
@@ -218,7 +309,7 @@ The following data is expected in the body of the request:
 """
 
 
-@mod.route("/unsubscribe/", methods=["GET"])
+@mod.route("/unsubscribe/", methods=["POST"])
 def unsubscribe():
     try:
         json_request = request.get_json()
@@ -226,7 +317,31 @@ def unsubscribe():
         if not json_request:
             return (
                 jsonify({"error": "The request body is empty!"}),
-                status.HTTP_204_NO_CONTENT,
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
+            return (
+                jsonify(
+                    {
+                        "error": "The "
+                        + BLOCKCHAIN_NAME_FIELD_NAME
+                        + " field was not found in the request!"
+                    }
+                ),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not STREAMS_FIELD_NAME in json_request:
+            return (
+                jsonify(
+                    {
+                        "error": "The "
+                        + STREAMS_FIELD_NAME
+                        + " field was not found in the request!"
+                    }
+                ),
+                status.HTTP_400_BAD_REQUEST,
             )
 
         blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
@@ -241,6 +356,12 @@ def unsubscribe():
         if not streams:
             return (
                 jsonify({"error": "The list of streams can't be empty!"}),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not isinstance(streams, list):
+            return (
+                jsonify({"error": "You must pass a list of streams"}),
                 status.HTTP_400_BAD_REQUEST,
             )
 
@@ -267,7 +388,7 @@ The following data is expected in the body of the request:
 """
 
 
-@mod.route("/resubscribe/", methods=["GET"])
+@mod.route("/resubscribe/", methods=["POST"])
 def resubscribe():
     try:
         json_request = request.get_json()
@@ -275,7 +396,31 @@ def resubscribe():
         if not json_request:
             return (
                 jsonify({"error": "The request body is empty!"}),
-                status.HTTP_204_NO_CONTENT,
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
+            return (
+                jsonify(
+                    {
+                        "error": "The "
+                        + BLOCKCHAIN_NAME_FIELD_NAME
+                        + " field was not found in the request!"
+                    }
+                ),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not STREAMS_FIELD_NAME in json_request:
+            return (
+                jsonify(
+                    {
+                        "error": "The "
+                        + STREAMS_FIELD_NAME
+                        + " field was not found in the request!"
+                    }
+                ),
+                status.HTTP_400_BAD_REQUEST,
             )
 
         blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
@@ -290,6 +435,12 @@ def resubscribe():
         if not streams:
             return (
                 jsonify({"error": "The list of streams can't be empty!"}),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not isinstance(streams, list):
+            return (
+                jsonify({"error": "You must pass a list of streams"}),
                 status.HTTP_400_BAD_REQUEST,
             )
 

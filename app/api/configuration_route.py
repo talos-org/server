@@ -3,6 +3,9 @@ from flask_api import status
 from app.models.configuration.configuration_controller import ConfigurationController
 from app.models.exception.multichain_error import MultiChainError
 
+BLOCKCHAIN_NAME_FIELD_NAME = "blockchainName"
+PARAMETERS_FIELD_NAME = "params"
+
 
 mod = Blueprint("configuration", __name__)
 
@@ -10,7 +13,8 @@ cc = ConfigurationController()
 
 """
 Creates the blockchain with the provided name
-The name is expected in the body of the post request using the tag "name"
+The following data is expected in the body of the request:
+    "blockchainName": blockchain name
 """
 
 
@@ -22,10 +26,18 @@ def create_chain():
         if not json_request:
             return (
                 jsonify({"error": "The request body is empty!"}),
-                status.HTTP_204_NO_CONTENT,
+                status.HTTP_400_BAD_REQUEST,
             )
 
-        blockchain_name = json_request["blockchainName"]
+        if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
+            return (
+                jsonify(
+                    {"error": "The blockchainName field was not found in the request!"}
+                ),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
 
         if not blockchain_name or not blockchain_name.strip():
             return (
@@ -44,14 +56,14 @@ def create_chain():
 
 """
 Configures the parameters in the param.dat using the blockchain name provided
-The name is expected in the body of the post request using the tag "name"
-The parameters are expected in the body, nested under the tag "params"
-The parameter tags are expected as follows:
-    "param blockchainName":
-    "param description":
-    "param maxBlockSize": 
-    "param targetBlockTime":
-    "param miningTurnover":
+The following data is expected in the body of the request:
+    "blockchainName":
+    "params" : [
+        "description" : 
+        "maxBlockSize" :
+        "targetBlockTime" :
+        "miningTurnover" :
+    ]
 """
 
 
@@ -63,11 +75,35 @@ def config_params():
         if not json_request:
             return (
                 jsonify({"error": "The request body is empty!"}),
-                status.HTTP_204_NO_CONTENT,
+                status.HTTP_400_BAD_REQUEST,
             )
 
-        blockchain_name = json_request["blockchainName"]
-        parameters = json_request["params"]
+        if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
+            return (
+                jsonify(
+                    {
+                        "error": "The "
+                        + BLOCKCHAIN_NAME_FIELD_NAME
+                        + " field was not found in the request!"
+                    }
+                ),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not PARAMETERS_FIELD_NAME in json_request:
+            return (
+                jsonify(
+                    {
+                        "error": "The "
+                        + PARAMETERS_FIELD_NAME
+                        + " field was not found in the request!"
+                    }
+                ),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
+        parameters = json_request[PARAMETERS_FIELD_NAME]
 
         if not blockchain_name or not blockchain_name.strip():
             return (
@@ -117,11 +153,12 @@ def config_params():
 
 """
 Deploys the created chain
-The blockchain name is expected in the body using the "blockchainName" tag
+The following data is expected in the body of the request:
+    "blockchainName": blockchain name
 """
 
 
-@mod.route("/deploy_chain/", methods=["GET"])
+@mod.route("/deploy_chain/", methods=["POST"])
 def deploy_chain():
     try:
         json_request = request.get_json()
@@ -129,10 +166,18 @@ def deploy_chain():
         if not json_request:
             return (
                 jsonify({"error": "The request body is empty!"}),
-                status.HTTP_204_NO_CONTENT,
+                status.HTTP_400_BAD_REQUEST,
             )
 
-        blockchain_name = json_request["blockchainName"]
+        if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
+            return (
+                jsonify(
+                    {"error": "The blockchainName field was not found in the request!"}
+                ),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
         if not blockchain_name or not blockchain_name.strip():
             return (
                 jsonify({"error": "The blockchain name can't be empty!"}),
@@ -154,22 +199,36 @@ def deploy_chain():
 
 """
 Returns the node address of the provided blockchain name
-The blockchain name is expected in the body using the "blockchainName" tag
+The following data is expected to be passed in as query parameters:
+    "blockchainName": blockchain name
 """
 
 
 @mod.route("/get_node_address/", methods=["GET"])
 def get_node_address():
     try:
-        json_request = request.get_json()
+        request_args = request.args
 
-        if not json_request:
+        if not request_args:
             return (
-                jsonify({"error": "The request body is empty!"}),
-                status.HTTP_204_NO_CONTENT,
+                jsonify({"error": "No parameters were passed!"}),
+                status.HTTP_400_BAD_REQUEST,
             )
 
-        blockchain_name = json_request["blockchainName"]
+        blockchain_name = request_args.get(BLOCKCHAIN_NAME_FIELD_NAME)
+
+        if blockchain_name is None:
+            return (
+                jsonify(
+                    {
+                        "error": "The "
+                        + BLOCKCHAIN_NAME_FIELD_NAME
+                        + " parameter was not found in the request!"
+                    }
+                ),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
         if not blockchain_name or not blockchain_name.strip():
             return (
                 jsonify({"error": "The blockchain name can't be empty!"}),

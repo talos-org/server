@@ -10,17 +10,17 @@ class MultiChainError(Exception):
         return list(filter(None, message.split("\n")))
 
     def get_error_code(self):
-        if len(self.message_parts) == 1:
+        if not any("error code:" in part for part in self.message_parts):
             return "N/A"
         return self.message_parts[1].split(": ")[1]
 
     def get_error_message(self):
-        if len(self.message_parts) == 1:
+        if "error:" in self.message_parts[0]:
             return self.message_parts[0].split(": ")[1]
         return "\n".join(self.message_parts[3:])
 
     def get_multichain_parameters(self):
-        if len(self.message_parts) == 1:
+        if not any("method" in part for part in self.message_parts):
             return "N/A"
         return json.loads(self.message_parts[0])
 

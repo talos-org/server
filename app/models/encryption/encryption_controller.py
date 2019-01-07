@@ -2,15 +2,14 @@ import nacl.secret
 import nacl.utils
 from nacl.public import PrivateKey, SealedBox, PublicKey
 
-from encryption.asymmetric_key_pair import AsymmetricKeyPair
-from encryption.encoded_asymmetric_key_pair import EncodedAsymmetricKeyPair
-from encryption.key_data import KeyData
+from app.models.encryption.asymmetric_key_pair import AsymmetricKeyPair
+from app.models.encryption.encoded_asymmetric_key_pair import EncodedAsymmetricKeyPair
+from app.models.encryption.key_data import KeyData
 
 KEY_ENCODING = nacl.encoding.Base64Encoder
 
 
 class EncrytpionController:
-
     def __init__(self, private_key: str = None):
         """
         If private key is None that means it is the first user (Admin)
@@ -47,7 +46,8 @@ class EncrytpionController:
         # Stores the encrypted symmetric key for each public key provided
         #
         public_key_symmetric_key_map = self.__encrypt_symmetric_key_with_public_keys(
-            symmetric_key, public_keys)
+            symmetric_key, public_keys
+        )
 
         key_data = KeyData(public_key_symmetric_key_map, enc_data)
         return key_data
@@ -74,18 +74,26 @@ class EncrytpionController:
         Return a randomly generated public and private key pair that is encoded
         """
         asym_key_pair = self.__generate_asymetric_key_pair()
-        return EncodedAsymmetricKeyPair(self.__encode_key(asym_key_pair.get_private_key()), self.__encode_key(asym_key_pair.get_public_key()))
+        return EncodedAsymmetricKeyPair(
+            self.__encode_key(asym_key_pair.get_private_key()),
+            self.__encode_key(asym_key_pair.get_public_key()),
+        )
 
-    def __encrypt_symmetric_key_with_public_keys(self, symmetric_key, encoded_public_keys):
+    def __encrypt_symmetric_key_with_public_keys(
+        self, symmetric_key, encoded_public_keys
+    ):
         """
         Encrypts the symmetric key using each public key. It then returns
         a map of public keys to their corresponding encrytped symmetric key
         """
-        public_key_symmetric_key_map={}
+        public_key_symmetric_key_map = {}
         encoded_public_keys.append(self.__encode_key(self._user_public_key))
         for encoded_public_key in encoded_public_keys:
-            public_key_symmetric_key_map[encoded_public_key]=self.__encrypt_symmetric_key_with_public_key(
-                symmetric_key, encoded_public_key)
+            public_key_symmetric_key_map[
+                encoded_public_key
+            ] = self.__encrypt_symmetric_key_with_public_key(
+                symmetric_key, encoded_public_key
+            )
         return public_key_symmetric_key_map
 
     def __encode_key(self, key):
@@ -106,7 +114,7 @@ class EncrytpionController:
         """
         Returns a randomly generated symmetric key
         """
-        key=nacl.utils.random(nacl.secret.SecretBox.KEY_SIZE)
+        key = nacl.utils.random(nacl.secret.SecretBox.KEY_SIZE)
         return key
 
     def __get_asymmetric_key_Pair(self, encoded_private_key: str):
@@ -114,18 +122,20 @@ class EncrytpionController:
         Returns an asymmetric key pair object given the encoded private key.
         The public and private keys inside this object are both objects
         """
-        private_key=PrivateKey(encoded_private_key, encoder=KEY_ENCODING)
-        public_key=private_key.public_key
+        private_key = PrivateKey(encoded_private_key, encoder=KEY_ENCODING)
+        public_key = private_key.public_key
         return AsymmetricKeyPair(private_key, public_key)
 
-    def __encrypt_symmetric_key_with_public_key(self, symmetric_key, encoded_public_key):
+    def __encrypt_symmetric_key_with_public_key(
+        self, symmetric_key, encoded_public_key
+    ):
         """
         Returns an encrypted symmetric key that has been encrypted using the provided
         public key
         """
-        public_key= self.__decode_key(PublicKey, encoded_public_key)
-        user_box=SealedBox(public_key)
-        enc_key=user_box.encrypt(symmetric_key)
+        public_key = self.__decode_key(PublicKey, encoded_public_key)
+        user_box = SealedBox(public_key)
+        enc_key = user_box.encrypt(symmetric_key)
         return enc_key
 
     def __generate_asymetric_key_pair(self):
@@ -133,8 +143,8 @@ class EncrytpionController:
         Returns a randomly generated asymmetric key pair. 
         The key pair is returned in an object that stores both keys
         """
-        secret_key=PrivateKey.generate()
-        public_key=secret_key.public_key
+        secret_key = PrivateKey.generate()
+        public_key = secret_key.public_key
         return AsymmetricKeyPair(secret_key, public_key)
 
     def __encrypt_data(self, data: str, secret_key):
@@ -142,6 +152,6 @@ class EncrytpionController:
         Encrypts the data using the proivded secret key. The encrypted data
         is then returned 
         """
-        box=nacl.secret.SecretBox(secret_key)
-        cipher_text=box.encrypt(data.encode())
+        box = nacl.secret.SecretBox(secret_key)
+        cipher_text = box.encrypt(data.encode())
         return cipher_text

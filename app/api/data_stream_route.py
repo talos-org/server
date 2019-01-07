@@ -178,7 +178,7 @@ def get_streams():
                 status.HTTP_400_BAD_REQUEST,
             )
 
-        if not request_args.getlist(STREAMS_PARAMETER_NAME) is None:
+        if request_args.getlist(STREAMS_PARAMETER_NAME):
             streams = request_args.getlist(STREAMS_PARAMETER_NAME)
 
             if not streams:

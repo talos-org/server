@@ -334,7 +334,7 @@ def get_items_by_keys():
                 status.HTTP_400_BAD_REQUEST,
             )
 
-        if keys is None:
+        if not keys:
             return (
                 jsonify(
                     {
@@ -559,7 +559,7 @@ def get_items_by_publishers():
                 status.HTTP_400_BAD_REQUEST,
             )
 
-        if publishers is None:
+        if not publishers:
             return (
                 jsonify(
                     {
@@ -774,7 +774,7 @@ def get_stream_publishers():
                 status.HTTP_400_BAD_REQUEST,
             )
 
-        if not request_args.get(PUBLISHERS_FIELD_NAME) is None:
+        if request_args.get(PUBLISHERS_FIELD_NAME):
             publishers = request_args.getlist(PUBLISHERS_PARAMETER_NAME)
             if not publishers:
                 return (

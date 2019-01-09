@@ -50,7 +50,7 @@ class PermissionController:
                 PermissionController.GLOBAL_PERMISSIONS_LIST
             ):
                 raise ValueError(
-                    "The permission(s) proivded: " + permissions + " does not exist."
+                    "The permission(s) proivded: " + str(permissions) + " does not exist."
                 )
 
             args = [
@@ -95,7 +95,7 @@ class PermissionController:
 
             if permission.lower() not in PermissionController.STREAM_PERMISSIONS_LIST:
                 raise ValueError(
-                    "The permission provided:" + permission + " does not exist."
+                    "The permission provided:" + str(permission) + " does not exist."
                 )
 
             args = [
@@ -147,7 +147,7 @@ class PermissionController:
                 ):
                     raise ValueError(
                         "The permission(s) proivded: "
-                        + permissions
+                        + str(permissions)
                         + " does not exist."
                     )
                 else:
@@ -207,7 +207,7 @@ class PermissionController:
                 PermissionController.GLOBAL_PERMISSIONS_LIST
             ):
                 raise ValueError(
-                    "The permission(s) proivded: " + permissions + " does not exist."
+                    "The permission(s) proivded: " + str(permissions) + " does not exist."
                 )
 
             args = [

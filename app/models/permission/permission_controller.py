@@ -56,7 +56,7 @@ class PermissionController:
             args = [
                 PermissionController.MULTICHAIN_ARG,
                 blockchain_name,
-                PermissionController.grant_global_permission,
+                PermissionController.GRANT_ARG,
                 ",".join(addresses),
                 ",".join(permissions),
             ]
@@ -101,7 +101,7 @@ class PermissionController:
             args = [
                 PermissionController.MULTICHAIN_ARG,
                 blockchain_name,
-                PermissionController.grant_global_permission,
+                PermissionController.GRANT_ARG,
                 address,
                 stream_name + "." + permission.lower(),
             ]

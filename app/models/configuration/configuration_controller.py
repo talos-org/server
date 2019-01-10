@@ -1,13 +1,11 @@
-#from subprocess import run, CalledProcessError
-#from subprocess import run, CalledProcessError
 import os
+from app.models.exception.multichain_error import MultiChainError
 import subprocess
 from subprocess import CalledProcessError
 from configobj import ConfigObj
 from pathlib import Path
 from shlex import quote
 import json
-import threading
 import time
 
 
@@ -52,9 +50,10 @@ class ConfigurationController:
             output = subprocess.run(cmd, check=True, capture_output=True, cwd=self._install_path)
             return output.stdout.strip()
         except CalledProcessError as err:
-            print(err.stderr)
+            raise MultiChainError(err.stderr)
         except Exception as err:
-            print(err)
+            raise err
+
 
     def config_params(self, blockchain_name: str, params_dict:{}):
 
@@ -178,3 +177,4 @@ class ConfigurationController:
                 continue
 
         return chains
+

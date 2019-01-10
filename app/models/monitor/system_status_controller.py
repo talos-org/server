@@ -137,3 +137,8 @@ class SystemStatusController:
             return nodes_address.difference(connectable_nodes_address)
         except Exception as err:
             raise err
+
+    @staticmethod
+    def get_fraudulent_nodes(nodes_list: list):
+        print("N/A")
+

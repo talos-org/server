@@ -1,6 +1,8 @@
 from flask import Flask
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 from app.api.configuration_route import mod
 from app.api.data_route import mod

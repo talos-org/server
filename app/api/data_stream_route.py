@@ -52,7 +52,7 @@ The following data is expected in the body of the request:
 """
 
 
-@mod.route("/create_stream/", methods=["POST"])
+@mod.route("/create_stream", methods=["POST"])
 def create_stream():
     try:
         json_request = request.get_json()
@@ -143,7 +143,7 @@ The following data is expected to be passed in as query parameters:
 """
 
 
-@mod.route("/get_streams/", methods=["GET"])
+@mod.route("/get_streams", methods=["GET"])
 def get_streams():
     try:
         request_args = request.args
@@ -225,7 +225,7 @@ The following data is expected in the body of the request:
 """
 
 
-@mod.route("/subscribe/", methods=["POST"])
+@mod.route("/subscribe", methods=["POST"])
 def subscribe():
     try:
         json_request = request.get_json()
@@ -309,7 +309,7 @@ The following data is expected in the body of the request:
 """
 
 
-@mod.route("/unsubscribe/", methods=["POST"])
+@mod.route("/unsubscribe", methods=["POST"])
 def unsubscribe():
     try:
         json_request = request.get_json()
@@ -388,7 +388,7 @@ The following data is expected in the body of the request:
 """
 
 
-@mod.route("/resubscribe/", methods=["POST"])
+@mod.route("/resubscribe", methods=["POST"])
 def resubscribe():
     try:
         json_request = request.get_json()

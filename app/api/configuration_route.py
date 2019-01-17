@@ -18,7 +18,7 @@ The following data is expected in the body of the request:
 """
 
 
-@mod.route("/create_chain/", methods=["POST"])
+@mod.route("/create_chain", methods=["POST"])
 def create_chain():
     try:
         json_request = request.get_json()
@@ -67,7 +67,7 @@ The following data is expected in the body of the request:
 """
 
 
-@mod.route("/config_parameters/", methods=["POST"])
+@mod.route("/config_parameters", methods=["POST"])
 def config_params():
     try:
         json_request = request.get_json()
@@ -158,7 +158,7 @@ The following data is expected in the body of the request:
 """
 
 
-@mod.route("/deploy_chain/", methods=["POST"])
+@mod.route("/deploy_chain", methods=["POST"])
 def deploy_chain():
     try:
         json_request = request.get_json()
@@ -204,7 +204,7 @@ The following data is expected to be passed in as query parameters:
 """
 
 
-@mod.route("/get_node_address/", methods=["GET"])
+@mod.route("/get_node_address", methods=["GET"])
 def get_node_address():
     try:
         request_args = request.args

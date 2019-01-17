@@ -56,7 +56,7 @@ The following data is expected in the body of the request:
 """
 
 
-@mod.route("/publish_item/", methods=["POST"])
+@mod.route("/publish_item", methods=["POST"])
 def publish_item():
     try:
         json_request = request.get_json()
@@ -180,7 +180,7 @@ The following data is expected to be passed in as query parameters:
 """
 
 
-@mod.route("/get_items_by_key/", methods=["GET"])
+@mod.route("/get_items_by_key", methods=["GET"])
 def get_items_by_key():
     try:
         request_args = request.args
@@ -294,7 +294,7 @@ The following data is expected to be passed in as query parameters:
 """
 
 
-@mod.route("/get_items_by_keys/", methods=["GET"])
+@mod.route("/get_items_by_keys", methods=["GET"])
 def get_items_by_keys():
     try:
         request_args = request.args
@@ -400,7 +400,7 @@ The following data is expected to be passed in as query parameters:
 """
 
 
-@mod.route("/get_items_by_publisher/", methods=["GET"])
+@mod.route("/get_items_by_publisher", methods=["GET"])
 def get_items_by_publisher():
     try:
         request_args = request.args
@@ -519,7 +519,7 @@ The following data is expected to be passed in as query parameters:
 """
 
 
-@mod.route("/get_items_by_publishers/", methods=["GET"])
+@mod.route("/get_items_by_publishers", methods=["GET"])
 def get_items_by_publishers():
     try:
         request_args = request.args
@@ -624,7 +624,7 @@ The following data is expected to be passed in as query parameters:
 """
 
 
-@mod.route("/get_stream_items/", methods=["GET"])
+@mod.route("/get_stream_items", methods=["GET"])
 def get_stream_items():
     try:
         request_args = request.args
@@ -719,7 +719,7 @@ The following data is expected to be passed in as query parameters:
 """
 
 
-@mod.route("/get_stream_publishers/", methods=["GET"])
+@mod.route("/get_stream_publishers", methods=["GET"])
 def get_stream_publishers():
     try:
         request_args = request.args

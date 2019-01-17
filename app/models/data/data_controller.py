@@ -13,7 +13,7 @@ class DataController:
     GET_STERAM_ITEMS_ARG = "liststreamitems"
     GET_STREAM_PUBLISHER_ITEMS_ARG = "liststreampublisheritems"
     GET_STREAM_PUBLISHERS_ARG = "liststreampublishers"
-    DEFAULT_VERBOSE_VALUE = False
+    DEFAULT_VERBOSE_VALUE = True
     DEFAULT_ITEM_COUNT_VALUE = MAX_DATA_COUNT
     DEFAULT_ITEM_START_VALUE = -MAX_DATA_COUNT
     DEFAULT_LOCAL_ORDERING_VALUE = False

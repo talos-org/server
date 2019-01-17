@@ -1,14 +1,18 @@
 from flask import Flask, request, jsonify, Blueprint
 from flask_api import status
 from app.models.monitor.system_status_controller import SystemStatusController
+from app.models.permission.permission_controller import PermissionController
 from app.models.exception.multichain_error import MultiChainError
-
+import json
 
 mod = Blueprint("systemstatus", __name__)
 
 
 BLOCKCHAIN_NAME_FIELD_NAME = "blockchainName"
 CONNECTABLE_NODES_FIELD_NAME = "connectableNodes"
+verbose = False
+addresses = "*"
+permissions = ["connect"]
 
 """
 Returns information relating to all the peers of the node making the request
@@ -93,7 +97,6 @@ def get_wallet_address():
 Returns all nodes the current node cannot connect to
 The following data is expected in the body of the request:
     "blockchainName": blockchain name
-    "connectableNodes": all connectable nodes
 """
 @mod.route("/get_inactive_nodes", methods=["POST"])
 def get_inactive_nodes():
@@ -112,16 +115,13 @@ def get_inactive_nodes():
                 status.HTTP_400_BAD_REQUEST,
             )
 
-        if not CONNECTABLE_NODES_FIELD_NAME in json_request:
-            return (
-                jsonify({"error": "The " + CONNECTABLE_NODES_FIELD_NAME + " field was not found in the request!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
-
         blockchain_name = json_request["blockchainName"]
 
-        connectable_nodes = json_request["connectableNodes"]
+        nodes_with_connect_permission = PermissionController.get_permissions(blockchain_name, permissions,
+                                                                             addresses, verbose)
 
+        nodes_json = json.dumps(nodes_with_connect_permission)
+        nodes_json = json.loads(nodes_json)
 
         if not blockchain_name or not blockchain_name.strip():
             return (
@@ -129,15 +129,11 @@ def get_inactive_nodes():
                 status.HTTP_400_BAD_REQUEST
             )
 
-        if not connectable_nodes or not connectable_nodes.strip():
-            return (
-                jsonify({"error": "The list of provided connectable nodes cannot be empty!"}),
-                status.HTTP_400_BAD_REQUEST
-            )
-
         blockchain_name = blockchain_name.strip()
-        inactive_nodes = SystemStatusController.get_inactive_nodes(blockchain_name, connectable_nodes)
-        return jsonify({"Inactive Nodes: ": inactive_nodes}), status.HTTP_200_OK
+
+        inactive_nodes = SystemStatusController.get_inactive_nodes(blockchain_name, nodes_json)
+
+        return jsonify({"Inactive Nodes: ": list(inactive_nodes)}), status.HTTP_200_OK
     except ValueError as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
     except Exception as ex:

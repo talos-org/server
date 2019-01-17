@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, Blueprint
 from flask_api import status
 from app.models.permission.permission_controller import PermissionController
 from app.models.exception.multichain_error import MultiChainError
+import json
 
 mod = Blueprint("permission", __name__)
 
@@ -400,23 +401,25 @@ def get_permissions():
                 status.HTTP_400_BAD_REQUEST
             )
 
-        if not verbose == "False" or not verbose == "True":
+
+        blockchain_name = blockchain_name.strip()
+
+
+        if verbose == "True":
+            verbose = True
+
+        elif verbose == "False":
+            verbose = False
+
+        else:
             return (
                 jsonify({"error": "The verbose option must be a boolean!"}),
                 status.HTTP_400_BAD_REQUEST
             )
 
-        blockchain_name = blockchain_name.strip()
-
-        if verbose == "True":
-            verbose = True
-
-        if verbose == "False":
-            verbose = False
-
         output = (PermissionController.get_permissions(blockchain_name, permissions, addresses, verbose))
 
-        return jsonify({"Transaction ID": output}), status.HTTP_200_OK
+        return jsonify({"Permissions": output}), status.HTTP_200_OK
     except ValueError as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
     except Exception as ex:

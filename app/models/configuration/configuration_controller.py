@@ -10,31 +10,32 @@ import time
 
 
 class ConfigurationController:
-    def __init__(self, params_path='', install_path=''):
-        self._multichain_util_arg = ['./multichain-util']
-        self._multichain_d_arg = ['./multichaind']
-        self._multichain_cli_arg = ['./multichain-cli']
-        self._create = self._multichain_util_arg+['create']
-        self._networkinfo_arg = 'getnetworkinfo'
-        self._data_dir_arg = "-datadir="
-        self._multichain_daemon = "-daemon"
-        self._multichain_path = ".multichain/"
-        self._params_file = "/params.dat"
-        self._chain_description = "chain-description"
-        self._max_block_size = "maximum-block-size"
-        self._target_block_time = "target-block-time"
-        self._mining_turnover = "mining-turnover"
-        self._mining_diversity = "mining-diversity"
-        self._default_install_path = '/usr/local/bin'
-        self._genesis_block_found_arg = 'Genesis block found'
-        self._retrieving_blockchain = 'Retrieving blockchain parameters'
-        self._params_path = self.validate_params_path(params_path)
-        self._install_path = self.validate_install_path(install_path)
-        self._localaddresses_arg = 'localaddresses'
-        self._address_arg = 'address'
-        self._default_network_port_arg = 'default-network-port'
+    MULTICHAIN_UTIL_ARG = ['./multichain-util']
+    MULTICHAIN_D_ARG = ['./multichaind']
+    MULTICHAIN_CLI_ARG = ['./multichain-cli']
+    CREATE_ARG = MULTICHAIN_UTIL_ARG+['create']
+    NETWORKINFO_ARG = 'getnetworkinfo'
+    DATA_DIR_ARG = "-datadir="
+    MULTICHAIN_DAEMON = "-daemon"
+    MULTICHAIN_PATH = ".multichain/"
+    PARAMS_FILE = "/params.dat"
+    CHAIN_DESCRIPTION = "chain-description"
+    MAX_BLOCK_SIZE = "maximum-block-size"
+    TARGET_BLOCK_TIME = "target-block-time"
+    MINING_TURNOVER = "mining-turnover"
+    MINING_DIVERSITY = "mining-diversity"
+    DEFAULT_INSTALL_PATH = '/usr/local/bin'
+    GENESIS_BLOCK_FOUND_ARG = 'Genesis block found'
+    RETRIEVING_BLOCKCHAIN_ARG = 'Retrieving blockchain parameters'
+    LOCAL_ADDRESSES_ARG = 'localaddresses'
+    ADDRESS_ARG = 'address'
+    DEFAULT_NETWORK_PORT_ARG = 'default-network-port'
+    MINE_EMPTY_ROUNDS = 'mine-empty-rounds'
+    MINE_EMPTY_ROUNDS_VALUE = '1'
 
-    def create_chain(self,blockchain_name: str):
+    @staticmethod
+    def create_chain(blockchain_name: str, params_path="", install_path=""):
+
         """
         Creates a new blockcahin with the provided name.
         Returns messange acknowledging that blockchain has been succesfully created :
@@ -46,8 +47,11 @@ class ConfigurationController:
         To generate blockchain please run "multichaind blockchain_name -daemon".
         """
         try:
-            cmd = self._create + [blockchain_name]+[self._data_dir_arg+self._params_path]
-            output = subprocess.run(cmd, check=True, capture_output=True, cwd=self._install_path)
+            cmd = ConfigurationController.CREATE_ARG + [blockchain_name]+[ConfigurationController.DATA_DIR_ARG+ConfigurationController.validate_params_path(params_path)]
+            output = subprocess.run(cmd, check=True, capture_output=True, cwd=ConfigurationController.validate_install_path(install_path))
+            config = ConfigObj(ConfigurationController.validate_params_path(params_path)+blockchain_name + ConfigurationController.PARAMS_FILE)
+            config[ConfigurationController.MINE_EMPTY_ROUNDS] = ConfigurationController.MINE_EMPTY_ROUNDS_VALUE
+            config.write()
             return output.stdout.strip()
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
@@ -55,7 +59,9 @@ class ConfigurationController:
             raise err
 
 
-    def config_params(self, blockchain_name: str, params_dict:{}):
+
+    @staticmethod
+    def config_params(blockchain_name: str, params_dict:{}, params_path=""):
 
         """
         The following parameters of a blockchain can be be configured after creating the chain but before starting the chain.
@@ -72,15 +78,21 @@ class ConfigurationController:
         :return Confirmation messange acknowledging that the parameters have been successfully added to the params.data file:
         """
         try:
-            config = ConfigObj(self._params_path+blockchain_name + self._params_file)
+            config = ConfigObj(ConfigurationController.validate_params_path(params_path)+blockchain_name + ConfigurationController.PARAMS_FILE)
 
             for key in params_dict:
-                config[key]=params_dict.get(key)
+                if key==ConfigurationController.MINING_TURNOVER and float(params_dict.get(key)) in range (0.0,1.0):
+                    config[key]=params_dict.get(key)
+                elif key == ConfigurationController.MINING_DIVERSITY and float(params_dict.get(key)) in range(0.0, 1.0):
+                    config[key] = params_dict.get(key)
+                elif key == ConfigurationController.TARGET_BLOCK_TIME and int(params_dict.get(key)) in range(9, 60):
+                    config[key] = params_dict.get(key)
             config.write()
         except Exception as err:
-            print(err)
+            raise err
 
-    def deploy_blockchain(self, blockchain_name):
+    @staticmethod
+    def deploy_blockchain(blockchain_name,params_path="", install_path=""):
         """
         Intializes the blockchain and also creates the genesis block
         :param blockchain_name: Name of the blockchain that is to be  deployed
@@ -88,34 +100,36 @@ class ConfigurationController:
         cwd=self._install_path
         """
         try:
-            cmd = self._multichain_d_arg + [blockchain_name, self._multichain_daemon] + [
-                self._data_dir_arg + self._params_path]
+            cmd = ConfigurationController.MULTICHAIN_D_ARG + [blockchain_name, ConfigurationController.MULTICHAIN_DAEMON] + [
+                ConfigurationController.DATA_DIR_ARG + ConfigurationController.validate_params_path(params_path)]
 
-            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=self._install_path)
+            p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, cwd=ConfigurationController.validate_install_path(install_path))
 
             output = []
             for index,line in enumerate(p.stdout, start=1):
                 output.append(line)
-                if (self._genesis_block_found_arg in str(line)) or (self._retrieving_blockchain in str(line)):
+                if (ConfigurationController.GENESIS_BLOCK_FOUND_ARG in str(line)) or (ConfigurationController.RETRIEVING_BLOCKCHAIN_ARG in str(line)):
                     return True
                 if index>6:
                     return False
 
         except CalledProcessError as err:
-            print(err.stderr)
+            raise err.stderr
         except Exception as err:
-            print(err)
+            raise err
 
-    def validate_params_path(self,path):
+    @staticmethod
+    def validate_params_path(path):
         """
         Validates the the params path provided by the user
         :return: a valid path of params.dat location
         """
         if os.path.exists(path):
             return path
-        return os.path.join(str(Path.home()),self._multichain_path)
+        return os.path.join(str(Path.home()),ConfigurationController.MULTICHAIN_PATH)
 
-    def validate_install_path(self,path):
+    @staticmethod
+    def validate_install_path(path):
         """
         Validates the the isntall path provided by the user
         :return: a valid path of install path of MultiChain
@@ -123,9 +137,10 @@ class ConfigurationController:
         """
         if os.path.exists(path):
             return path
-        return self._default_install_path
+        return ConfigurationController.DEFAULT_INSTALL_PATH
 
-    def get_node_address(self,blockchain_name: str):
+    @staticmethod
+    def get_node_address(blockchain_name: str,install_path=""):
         """
         Returns the node address for the specified blockchain in
         the fomart -> chain1@[ip-address]:[port]
@@ -134,18 +149,20 @@ class ConfigurationController:
         """
 
         try:
-            cmd = self._multichain_cli_arg +[quote(blockchain_name)]+[self._networkinfo_arg]
-            output = subprocess.run(cmd, check=True, capture_output=True, cwd=self._install_path)
+            cmd = ConfigurationController.MULTICHAIN_CLI_ARG +[quote(blockchain_name)]+[ConfigurationController.NETWORKINFO_ARG]
+            output = subprocess.run(cmd, check=True, capture_output=True, cwd=ConfigurationController.validate_install_path(install_path))
             json_output = json.loads(output.stdout.strip())
-            ip_address = json_output[self._localaddresses_arg][0][self._address_arg]
-            val = blockchain_name +'@'+ ip_address+':'+ self.get_config_param(blockchain_name, param=self._default_network_port_arg)
+            print(type(json_output))
+            ip_address = json_output[ConfigurationController.LOCAL_ADDRESSES_ARG][0][ConfigurationController.ADDRESS_ARG]
+            val = blockchain_name +'@'+ ip_address+':'+ ConfigurationController.get_config_param(blockchain_name, param=ConfigurationController.DEFAULT_NETWORK_PORT_ARG)
             return val
         except CalledProcessError as err:
-            print(err.stderr)
+            raise err.stderr
         except Exception as err:
-            print(err)
+            raise err
 
-    def get_config_param(self,blockchain_name: str, param: str):
+    @staticmethod
+    def get_config_param(blockchain_name: str, param: str,params_path=""):
         """
         Returns the value for a specified parameter within in the param.dat file
         eg - value = config.get_config_param(blockchain_name=name,param='default-network-port')
@@ -154,27 +171,27 @@ class ConfigurationController:
         :returns: Value of the parameter from the params.dat file
         """
         try:
-            config = ConfigObj(self._params_path + blockchain_name + self._params_file)
+            config = ConfigObj(ConfigurationController.validate_params_path(params_path) + blockchain_name + ConfigurationController.PARAMS_FILE)
             value = config[param]
             return value
         except Exception as err:
-            print(err)
+            raise err
 
-    def get_blockchains(self):
+    @staticmethod
+    def get_blockchains(params_path=""):
         """
         Provides a list of all the blockchains in the params path
         default in -> ~/.multichain
         :returns: a list containing string value that represents a blockchain
         """
-        files = os.listdir(self._params_path)
+        files = os.listdir(ConfigurationController.validate_params_path(params_path))
         chains = []
         for chain in files:
             try:
-                files = os.listdir(os.path.join(self._params_path, chain))
+                files = os.listdir(os.path.join(ConfigurationController.validate_params_path(params_path), chain))
                 if 'params.dat' in files:
                     chains.append(chain)
             except Exception as err:
                 continue
 
         return chains
-

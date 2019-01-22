@@ -97,11 +97,7 @@ class SystemStatusController:
             if not blockchain_name:
                 raise ValueError("Blockchain name can't be empty")
 
-            nodes_connect_permisison = [
-                node_connect_permission.strip()
-                for node_connect_permission in nodes_connect_permisison
-                if node_connect_permission.strip()
-            ]
+
             if not nodes_connect_permisison:
                 raise ValueError(
                     "The list of nodes with connection permission is empty"

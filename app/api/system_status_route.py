@@ -48,8 +48,8 @@ def get_peer_info():
         peer_info = SystemStatusController.get_peer_info(blockchain_name)
 
         return jsonify({"Peer Info: ": peer_info}), status.HTTP_200_OK
-    except ValueError as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+    except MultiChainError as ex:
+        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
     except Exception as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
 
@@ -134,7 +134,7 @@ def get_inactive_nodes():
         inactive_nodes = SystemStatusController.get_inactive_nodes(blockchain_name, nodes_json)
 
         return jsonify({"Inactive Nodes: ": list(inactive_nodes)}), status.HTTP_200_OK
-    except ValueError as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+    except MultiChainError as ex:
+        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
     except Exception as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST

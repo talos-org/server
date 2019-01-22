@@ -156,8 +156,6 @@ Deploys the created chain
 The following data is expected in the body of the request:
     "blockchainName": blockchain name
 """
-
-
 @mod.route("/deploy_chain", methods=["POST"])
 def deploy_chain():
     try:
@@ -203,7 +201,6 @@ The following data is expected to be passed in as query parameters:
     "blockchainName": blockchain name
 """
 
-
 @mod.route("/get_node_address", methods=["GET"])
 def get_node_address():
     try:
@@ -245,5 +242,51 @@ def get_node_address():
     except MultiChainError as ex:
         return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
 
+    except Exception as ex:
+        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+
+
+"""
+Returns the node address of the provided blockchain name
+The following data is expected to be passed in as query parameters:
+    "blockchainName": blockchain name
+"""
+
+"""
+Deploys the created chain
+The following data is expected in the body of the request:
+    "blockchainName": blockchain name
+"""
+@mod.route("/check_blockchain_name", methods=["POST"])
+def check_blockchain_name():
+    try:
+        json_request = request.get_json()
+
+        if not json_request:
+            return (
+                jsonify({"error": "The request body is empty!"}),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
+            return (
+                jsonify(
+                    {"error": "The blockchainName field was not found in the request!"}
+                ),
+                status.HTTP_400_BAD_REQUEST,
+            )
+
+        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
+
+        existing_blockchains=cc.get_blockchains()
+
+        if blockchain_name in existing_blockchains:
+            return jsonify({"status": "Blockchain name already exists!"}), status.HTTP_400_BAD_REQUEST
+
+        else:
+            return jsonify({"status": "Valid blockchain name"}), status.HTTP_200_OK
+
+    except MultiChainError as ex:
+        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
     except Exception as ex:
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST

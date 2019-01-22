@@ -58,45 +58,23 @@ def create_stream():
         json_request = request.get_json()
 
         if not json_request:
-            return (
-                jsonify({"error": "The request body is empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The request body is empty!")
 
         if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + BLOCKCHAIN_NAME_FIELD_NAME
-                        + " field was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + BLOCKCHAIN_NAME_FIELD_NAME
+                + " field was not found in the request!"
             )
 
         if not STREAM_NAME_FIELD_NAME in json_request:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + STREAM_NAME_FIELD_NAME
-                        + " field was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The " + STREAM_NAME_FIELD_NAME + " field was not found in the request!"
             )
 
         if not IS_OPEN_FIELD_NAME in json_request:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + IS_OPEN_FIELD_NAME
-                        + " field was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The " + IS_OPEN_FIELD_NAME + " field was not found in the request!"
             )
 
         blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
@@ -106,30 +84,19 @@ def create_stream():
         )
 
         if not blockchain_name or not blockchain_name.strip():
-            return (
-                jsonify({"error": "The blockchain name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The blockchain name can't be empty!")
 
         if not stream_name or not stream_name.strip():
-            return (
-                jsonify({"error": "The stream name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The stream name can't be empty!")
 
         blockchain_name = blockchain_name.strip()
         stream_name = stream_name.strip()
         DataStreamController.create_stream(blockchain_name, stream_name, is_open)
-        return jsonify({"Status": stream_name + " created!"}), status.HTTP_200_OK
-    except ValueError as ex:
-        return (
-            jsonify({"error": "The data is not a valid JSON"}),
-            status.HTTP_400_BAD_REQUEST,
-        )
+        return jsonify({"status": stream_name + " created!"}), status.HTTP_200_OK
     except MultiChainError as ex:
         return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
-    except Exception as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+    except (ValueError, Exception) as ex:
+        return (jsonify({"error": {"message": str(ex)}}), status.HTTP_400_BAD_REQUEST)
 
 
 """
@@ -149,10 +116,7 @@ def get_streams():
         request_args = request.args
 
         if not request_args:
-            return (
-                jsonify({"error": "No parameters were passed!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("No parameters were passed!")
 
         blockchain_name = request_args.get(BLOCKCHAIN_NAME_FIELD_NAME)
         streams = DataStreamController.DEFAULT_STREAMS_LIST_CONTENT
@@ -161,37 +125,23 @@ def get_streams():
         start = DataStreamController.DEFAULT_STREAM_START_VALUE
 
         if blockchain_name is None:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + BLOCKCHAIN_NAME_FIELD_NAME
-                        + " parameter was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + BLOCKCHAIN_NAME_FIELD_NAME
+                + " parameter was not found in the request!"
             )
 
         if not blockchain_name or not blockchain_name.strip():
-            return (
-                jsonify({"error": "The blockchain name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The blockchain name can't be empty!")
 
         if request_args.getlist(STREAMS_PARAMETER_NAME):
             streams = request_args.getlist(STREAMS_PARAMETER_NAME)
 
             if not streams:
-                return (
-                    jsonify({"error": "The list of streams can't be empty!"}),
-                    status.HTTP_400_BAD_REQUEST,
-                )
+                raise ValueError("The list of streams can't be empty!")
 
             if not isinstance(streams, list):
-                return (
-                    jsonify({"error": "You must pass a list of streams"}),
-                    status.HTTP_400_BAD_REQUEST,
-                )
+                raise ValueError("You must pass a list of streams")
 
         if not request_args.get(VERBOSE_FIELD_NAME) is None:
             verbose = convert_to_boolean(
@@ -208,11 +158,11 @@ def get_streams():
         json_data = DataStreamController.get_streams(
             blockchain_name, streams, verbose, count, start
         )
-        return jsonify({"Data": json_data}), status.HTTP_200_OK
-    except ValueError as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
-    except Exception as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+        return jsonify(json_data), status.HTTP_200_OK
+    except MultiChainError as ex:
+        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
+    except (ValueError, Exception) as ex:
+        return (jsonify({"error": {"message": str(ex)}}), status.HTTP_400_BAD_REQUEST)
 
 
 """
@@ -231,33 +181,18 @@ def subscribe():
         json_request = request.get_json()
 
         if not json_request:
-            return (
-                jsonify({"error": "The request body is empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The request body is empty!")
 
         if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + BLOCKCHAIN_NAME_FIELD_NAME
-                        + " field was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + BLOCKCHAIN_NAME_FIELD_NAME
+                + " field was not found in the request!"
             )
 
         if not STREAMS_FIELD_NAME in json_request:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + STREAMS_FIELD_NAME
-                        + " field was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The " + STREAMS_FIELD_NAME + " field was not found in the request!"
             )
 
         blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
@@ -265,22 +200,13 @@ def subscribe():
         rescan = DataStreamController.DEFAULT_RESCAN_VALUE
 
         if not blockchain_name or not blockchain_name.strip():
-            return (
-                jsonify({"error": "The blockchain name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The blockchain name can't be empty!")
 
         if not streams:
-            return (
-                jsonify({"error": "The list of streams can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The list of streams can't be empty!")
 
         if not isinstance(streams, list):
-            return (
-                jsonify({"error": "You must pass a list of streams"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("You must pass a list of streams")
 
         if RESCAN_FIELD_NAME in json_request:
             rescan = convert_to_boolean(
@@ -290,15 +216,15 @@ def subscribe():
         blockchain_name = blockchain_name.strip()
         result = DataStreamController.subscribe(blockchain_name, streams, rescan)
         if result:
-            return jsonify({"Status": "Subscribed successfully!"}), status.HTTP_200_OK
+            return jsonify({"status": "Subscribed successfully!"}), status.HTTP_200_OK
         return (
-            jsonify({"Status": "Failed to subscribe to stream(s)"}),
-            status.HTTP_417_EXPECTATION_FAILED,
+            jsonify({"status": "Failed to subscribe to stream(s)"}),
+            status.HTTP_400_BAD_REQUEST,
         )
-    except ValueError as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
-    except Exception as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+    except MultiChainError as ex:
+        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
+    except (ValueError, Exception) as ex:
+        return (jsonify({"error": {"message": str(ex)}}), status.HTTP_400_BAD_REQUEST)
 
 
 """
@@ -315,68 +241,44 @@ def unsubscribe():
         json_request = request.get_json()
 
         if not json_request:
-            return (
-                jsonify({"error": "The request body is empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The request body is empty!")
 
         if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + BLOCKCHAIN_NAME_FIELD_NAME
-                        + " field was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + BLOCKCHAIN_NAME_FIELD_NAME
+                + " field was not found in the request!"
             )
 
         if not STREAMS_FIELD_NAME in json_request:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + STREAMS_FIELD_NAME
-                        + " field was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The " + STREAMS_FIELD_NAME + " field was not found in the request!"
             )
 
         blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
         streams = json_request[STREAMS_FIELD_NAME]
 
         if not blockchain_name or not blockchain_name.strip():
-            return (
-                jsonify({"error": "The blockchain name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The blockchain name can't be empty!")
 
         if not streams:
-            return (
-                jsonify({"error": "The list of streams can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The list of streams can't be empty!")
 
         if not isinstance(streams, list):
-            return (
-                jsonify({"error": "You must pass a list of streams"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("You must pass a list of streams")
 
         blockchain_name = blockchain_name.strip()
         result = DataStreamController.unsubscribe(blockchain_name, streams)
         if result:
-            return jsonify({"Status": "Unsubscribed successfully!"}), status.HTTP_200_OK
+            return jsonify({"status": "Unsubscribed successfully!"}), status.HTTP_200_OK
         return (
-            jsonify({"Status": "Failed to unsubscribe from stream(s)"}),
-            status.HTTP_417_EXPECTATION_FAILED,
+            jsonify({"status": "Failed to unsubscribe from stream(s)"}),
+            status.HTTP_400_BAD_REQUEST,
         )
-    except ValueError as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
-    except Exception as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+    except MultiChainError as ex:
+        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
+    except (ValueError, Exception) as ex:
+        return (jsonify({"error": {"message": str(ex)}}), status.HTTP_400_BAD_REQUEST)
 
 
 """
@@ -394,66 +296,42 @@ def resubscribe():
         json_request = request.get_json()
 
         if not json_request:
-            return (
-                jsonify({"error": "The request body is empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The request body is empty!")
 
         if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + BLOCKCHAIN_NAME_FIELD_NAME
-                        + " field was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + BLOCKCHAIN_NAME_FIELD_NAME
+                + " field was not found in the request!"
             )
 
         if not STREAMS_FIELD_NAME in json_request:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + STREAMS_FIELD_NAME
-                        + " field was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The " + STREAMS_FIELD_NAME + " field was not found in the request!"
             )
 
         blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
         streams = json_request[STREAMS_FIELD_NAME]
 
         if not blockchain_name or not blockchain_name.strip():
-            return (
-                jsonify({"error": "The blockchain name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The blockchain name can't be empty!")
 
         if not streams:
-            return (
-                jsonify({"error": "The list of streams can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The list of streams can't be empty!")
 
         if not isinstance(streams, list):
-            return (
-                jsonify({"error": "You must pass a list of streams"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("You must pass a list of streams")
 
         blockchain_name = blockchain_name.strip()
         result = DataStreamController.resubscribe(blockchain_name, streams)
         if result:
-            return jsonify({"Status": "resubscribed successfully!"}), status.HTTP_200_OK
+            return jsonify({"status": "Resubscribed successfully!"}), status.HTTP_200_OK
         return (
-            jsonify({"Status": "Failed to resubscribe to stream(s)"}),
-            status.HTTP_417_EXPECTATION_FAILED,
+            jsonify({"status": "Failed to resubscribe to stream(s)"}),
+            status.HTTP_400_BAD_REQUEST,
         )
-    except ValueError as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
-    except Exception as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+    except MultiChainError as ex:
+        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
+    except (ValueError, Exception) as ex:
+        return (jsonify({"error": {"message": str(ex)}}), status.HTTP_400_BAD_REQUEST)
 

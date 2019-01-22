@@ -48,6 +48,8 @@ class DataStreamController:
             return output.stdout.strip()
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
+        except ValueError as err:
+            raise err
         except Exception as err:
             raise err
 
@@ -91,6 +93,8 @@ class DataStreamController:
             return json.loads(streams.stdout)
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
+        except ValueError as err:
+            raise err
         except Exception as err:
             raise err
 
@@ -128,6 +132,8 @@ class DataStreamController:
             return not output.stdout.strip()
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
+        except ValueError as err:
+            raise err
         except Exception as err:
             raise err
 
@@ -159,6 +165,8 @@ class DataStreamController:
             return not output.stdout.strip()
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
+        except ValueError as err:
+            raise err
         except Exception as err:
             raise err
 
@@ -185,5 +193,7 @@ class DataStreamController:
             ) and DataStreamController.subscribe(blockchain_name, streams, True)
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
+        except ValueError as err:
+            raise err
         except Exception as err:
             raise err

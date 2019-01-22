@@ -50,7 +50,9 @@ class PermissionController:
                 PermissionController.GLOBAL_PERMISSIONS_LIST
             ):
                 raise ValueError(
-                    "The permission(s) proivded: " + str(permissions) + " does not exist."
+                    "The permission(s) proivded: "
+                    + str(permissions)
+                    + " does not exist."
                 )
 
             args = [
@@ -65,6 +67,8 @@ class PermissionController:
             return output.stdout
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
+        except ValueError as err:
+            raise err
         except Exception as err:
             raise err
 
@@ -110,6 +114,8 @@ class PermissionController:
             return output.stdout
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
+        except ValueError as err:
+            raise err
         except Exception as err:
             raise err
 
@@ -175,6 +181,8 @@ class PermissionController:
             return json.loads(output.stdout)
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
+        except ValueError as err:
+            raise err
         except Exception as err:
             raise err
 
@@ -207,7 +215,9 @@ class PermissionController:
                 PermissionController.GLOBAL_PERMISSIONS_LIST
             ):
                 raise ValueError(
-                    "The permission(s) proivded: " + str(permissions) + " does not exist."
+                    "The permission(s) proivded: "
+                    + str(permissions)
+                    + " does not exist."
                 )
 
             args = [
@@ -222,6 +232,8 @@ class PermissionController:
             return output.stdout
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
+        except ValueError as err:
+            raise err
         except Exception as err:
             raise err
 
@@ -269,6 +281,8 @@ class PermissionController:
             return output.stdout
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
+        except ValueError as err:
+            raise err
         except Exception as err:
             raise err
 

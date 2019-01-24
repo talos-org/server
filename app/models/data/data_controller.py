@@ -123,6 +123,8 @@ class DataController:
             return json.loads(items.stdout)
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
+        except ValueError as err:
+            raise err
         except Exception as err:
             raise err
 
@@ -185,6 +187,8 @@ class DataController:
             return json.loads(items.stdout)
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
+        except ValueError as err:
+            raise err
         except Exception as err:
             raise err
 
@@ -233,6 +237,8 @@ class DataController:
             return json.loads(items.stdout)
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
+        except ValueError as err:
+            raise err
         except Exception as err:
             raise err
 
@@ -283,6 +289,8 @@ class DataController:
             return json.loads(items.stdout)
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
+        except ValueError as err:
+            raise err
         except Exception as err:
             raise err
 
@@ -330,6 +338,8 @@ class DataController:
             return json.loads(items.stdout)
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
+        except ValueError as err:
+            raise err
         except Exception as err:
             raise err
 
@@ -386,5 +396,7 @@ class DataController:
             return json.loads(publishers.stdout)
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
+        except ValueError as err:
+            raise err
         except Exception as err:
             raise err

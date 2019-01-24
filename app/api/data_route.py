@@ -31,10 +31,8 @@ def convert_to_boolean(field_name: str, value: str):
         raise ValueError(
             "The value provided for " + field_name + " is not a valid boolean value"
         )
-    except ValueError as ex:
-        raise ex
-    except Exception as ex:
-        raise ex
+    except (ValueError, Exception) as ex:
+        return (jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST)
 
 
 def convert_to_int(field_name: str, value: str):
@@ -62,57 +60,28 @@ def publish_item():
         json_request = request.get_json()
 
         if not json_request:
-            return (
-                jsonify({"error": "The request body is empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The request body is empty!")
 
         if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + BLOCKCHAIN_NAME_FIELD_NAME
-                        + " field was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + BLOCKCHAIN_NAME_FIELD_NAME
+                + " field was not found in the request!"
             )
 
         if not STREAM_NAME_FIELD_NAME in json_request:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + STREAM_NAME_FIELD_NAME
-                        + " field was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The " + STREAM_NAME_FIELD_NAME + " field was not found in the request!"
             )
 
         if not KEYS_FIELD_NAME in json_request:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + KEYS_FIELD_NAME
-                        + " field was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The " + KEYS_FIELD_NAME + " field was not found in the request!"
             )
 
         if not DATA_FIELD_NAME in json_request:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + DATA_FIELD_NAME
-                        + " field was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The " + DATA_FIELD_NAME + " field was not found in the request!"
             )
 
         blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
@@ -121,49 +90,30 @@ def publish_item():
         data = json_request[DATA_FIELD_NAME]
 
         if not blockchain_name or not blockchain_name.strip():
-            return (
-                jsonify({"error": "The blockchain name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The blockchain name can't be empty!")
 
         if not stream_name or not stream_name.strip():
-            return (
-                jsonify({"error": "The stream name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The stream name can't be empty!")
 
         if not keys:
-            return (
-                jsonify({"error": "The list of keys can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The list of keys can't be empty!")
 
         if not isinstance(keys, list):
-            return (
-                jsonify({"error": "You must pass a list of keys"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("You must pass a list of keys")
 
         if not data:
-            return (
-                jsonify({"error": "The data can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The data can't be empty!")
 
         blockchain_name = blockchain_name.strip()
         stream_name = stream_name.strip()
         json_data = json.dumps(data)
         DataController.publish_item(blockchain_name, stream_name, keys, json_data)
-        return jsonify({"Status": "Data published!"}), status.HTTP_200_OK
-    except ValueError as ex:
-        return (
-            jsonify({"error": "The data is not a valid JSON"}),
-            status.HTTP_400_BAD_REQUEST,
-        )
+        return jsonify({"status": "Data published!"}), status.HTTP_200_OK
+
     except MultiChainError as ex:
         return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
-    except Exception as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+    except (ValueError, Exception) as ex:
+        return (jsonify({"error": {"message": str(ex)}}), status.HTTP_400_BAD_REQUEST)
 
 
 """
@@ -186,49 +136,29 @@ def get_items_by_key():
         request_args = request.args
 
         if not request_args:
-            return (
-                jsonify({"error": "No parameters were passed!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("No parameters were passed!")
 
         blockchain_name = request_args.get(BLOCKCHAIN_NAME_FIELD_NAME)
         stream_name = request_args.get(STREAM_NAME_FIELD_NAME)
         key = request_args.get(KEY_FIELD_NAME)
 
         if blockchain_name is None:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + BLOCKCHAIN_NAME_FIELD_NAME
-                        + " parameter was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + BLOCKCHAIN_NAME_FIELD_NAME
+                + " parameter was not found in the request!"
             )
 
         if stream_name is None:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + STREAM_NAME_FIELD_NAME
-                        + " parameter was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + STREAM_NAME_FIELD_NAME
+                + " parameter was not found in the request!"
             )
 
         if key is None:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + KEY_FIELD_NAME
-                        + " parameter was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The " + KEY_FIELD_NAME + " parameter was not found in the request!"
             )
 
         verbose = DataController.DEFAULT_VERBOSE_VALUE
@@ -237,22 +167,13 @@ def get_items_by_key():
         local_ordering = DataController.DEFAULT_LOCAL_ORDERING_VALUE
 
         if not blockchain_name or not blockchain_name.strip():
-            return (
-                jsonify({"error": "The blockchain name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The blockchain name can't be empty!")
 
         if not stream_name or not stream_name.strip():
-            return (
-                jsonify({"error": "The stream name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The stream name can't be empty!")
 
         if not key or not key.strip():
-            return (
-                jsonify({"error": "The data key can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The data key can't be empty!")
 
         if not request_args.get(VERBOSE_FIELD_NAME) is None:
             verbose = convert_to_boolean(
@@ -276,11 +197,11 @@ def get_items_by_key():
         json_data = DataController.get_items_by_key(
             blockchain_name, stream_name, key, verbose, count, start, local_ordering
         )
-        return jsonify({"Data": json_data}), status.HTTP_200_OK
-    except ValueError as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
-    except Exception as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+        return jsonify(json_data), status.HTTP_200_OK
+    except MultiChainError as ex:
+        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
+    except (ValueError, Exception) as ex:
+        return (jsonify({"error": {"message": str(ex)}}), status.HTTP_400_BAD_REQUEST)
 
 
 """
@@ -300,10 +221,7 @@ def get_items_by_keys():
         request_args = request.args
 
         if not request_args:
-            return (
-                jsonify({"error": "No parameters were passed!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("No parameters were passed!")
 
         blockchain_name = request_args.get(BLOCKCHAIN_NAME_FIELD_NAME)
         stream_name = request_args.get(STREAM_NAME_FIELD_NAME)
@@ -311,64 +229,37 @@ def get_items_by_keys():
         verbose = DataController.DEFAULT_VERBOSE_VALUE
 
         if blockchain_name is None:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + BLOCKCHAIN_NAME_FIELD_NAME
-                        + " parameter was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + BLOCKCHAIN_NAME_FIELD_NAME
+                + " parameter was not found in the request!"
             )
 
         if stream_name is None:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + STREAM_NAME_FIELD_NAME
-                        + " parameter was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + STREAM_NAME_FIELD_NAME
+                + " parameter was not found in the request!"
             )
 
         if not keys:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + KEYS_PARAMETER_NAME
-                        + " parameter was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + KEYS_PARAMETER_NAME
+                + " parameter was not found in the request!"
             )
 
         if not blockchain_name or not blockchain_name.strip():
-            return (
-                jsonify({"error": "The blockchain name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The blockchain name can't be empty!")
 
         if not stream_name or not stream_name.strip():
-            return (
-                jsonify({"error": "The stream name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The stream name can't be empty!")
 
         if not keys:
-            return (
-                jsonify({"error": "The list of keys can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The list of keys can't be empty!")
 
         if not isinstance(keys, list):
-            return (
-                jsonify({"error": "You must pass a list of keys"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("You must pass a list of keys")
 
         if not request_args.get(VERBOSE_FIELD_NAME) is None:
             verbose = convert_to_boolean(
@@ -380,11 +271,11 @@ def get_items_by_keys():
         json_data = DataController.get_items_by_keys(
             blockchain_name, stream_name, keys, verbose
         )
-        return jsonify({"Data": json_data}), status.HTTP_200_OK
-    except ValueError as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
-    except Exception as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+        return jsonify(json_data), status.HTTP_200_OK
+    except MultiChainError as ex:
+        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
+    except (ValueError, Exception) as ex:
+        return (jsonify({"error": {"message": str(ex)}}), status.HTTP_400_BAD_REQUEST)
 
 
 """
@@ -406,10 +297,7 @@ def get_items_by_publisher():
         request_args = request.args
 
         if not request_args:
-            return (
-                jsonify({"error": "No parameters were passed!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("No parameters were passed!")
 
         blockchain_name = request_args.get(BLOCKCHAIN_NAME_FIELD_NAME)
         stream_name = request_args.get(STREAM_NAME_FIELD_NAME)
@@ -420,58 +308,34 @@ def get_items_by_publisher():
         local_ordering = DataController.DEFAULT_LOCAL_ORDERING_VALUE
 
         if blockchain_name is None:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + BLOCKCHAIN_NAME_FIELD_NAME
-                        + " parameter was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + BLOCKCHAIN_NAME_FIELD_NAME
+                + " parameter was not found in the request!"
             )
 
         if stream_name is None:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + STREAM_NAME_FIELD_NAME
-                        + " parameter was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + STREAM_NAME_FIELD_NAME
+                + " parameter was not found in the request!"
             )
 
         if publisher is None:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + PUBLISHER_FIELD_NAME
-                        + " parameter was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + PUBLISHER_FIELD_NAME
+                + " parameter was not found in the request!"
             )
 
         if not blockchain_name or not blockchain_name.strip():
-            return (
-                jsonify({"error": "The blockchain name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The blockchain name can't be empty!")
 
         if not stream_name or not stream_name.strip():
-            return (
-                jsonify({"error": "The stream name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The stream name can't be empty!")
 
         if not publisher or not publisher.strip():
-            return (
-                jsonify({"error": "The publisher wallet address can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The publisher wallet address can't be empty!")
 
         if not request_args.get(VERBOSE_FIELD_NAME) is None:
             verbose = convert_to_boolean(
@@ -501,11 +365,11 @@ def get_items_by_publisher():
             start,
             local_ordering,
         )
-        return jsonify({"Data": json_data}), status.HTTP_200_OK
-    except ValueError as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
-    except Exception as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+        return jsonify(json_data), status.HTTP_200_OK
+    except MultiChainError as ex:
+        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
+    except (ValueError, Exception) as ex:
+        return (jsonify({"error": {"message": str(ex)}}), status.HTTP_400_BAD_REQUEST)
 
 
 """
@@ -525,10 +389,7 @@ def get_items_by_publishers():
         request_args = request.args
 
         if not request_args:
-            return (
-                jsonify({"error": "No parameters were passed!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("No parameters were passed!")
 
         blockchain_name = request_args.get(BLOCKCHAIN_NAME_FIELD_NAME)
         stream_name = request_args.get(STREAM_NAME_FIELD_NAME)
@@ -536,64 +397,37 @@ def get_items_by_publishers():
         verbose = DataController.DEFAULT_VERBOSE_VALUE
 
         if blockchain_name is None:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + BLOCKCHAIN_NAME_FIELD_NAME
-                        + " parameter was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + BLOCKCHAIN_NAME_FIELD_NAME
+                + " parameter was not found in the request!"
             )
 
         if stream_name is None:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + STREAM_NAME_FIELD_NAME
-                        + " parameter was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + STREAM_NAME_FIELD_NAME
+                + " parameter was not found in the request!"
             )
 
         if not publishers:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + PUBLISHERS_PARAMETER_NAME
-                        + " parameter was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + PUBLISHERS_PARAMETER_NAME
+                + " parameter was not found in the request!"
             )
 
         if not blockchain_name or not blockchain_name.strip():
-            return (
-                jsonify({"error": "The blockchain name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The blockchain name can't be empty!")
 
         if not stream_name or not stream_name.strip():
-            return (
-                jsonify({"error": "The stream name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The stream name can't be empty!")
 
         if not publishers:
-            return (
-                jsonify({"error": "The list of publishers can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The list of publishers can't be empty!")
 
         if not isinstance(publishers, list):
-            return (
-                jsonify({"error": "You must pass a list of publishers"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("You must pass a list of publishers")
 
         if not request_args.get(VERBOSE_FIELD_NAME) is None:
             verbose = convert_to_boolean(
@@ -605,11 +439,11 @@ def get_items_by_publishers():
         json_data = DataController.get_items_by_publishers(
             blockchain_name, stream_name, publishers, verbose
         )
-        return jsonify({"Data": json_data}), status.HTTP_200_OK
-    except ValueError as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
-    except Exception as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+        return jsonify(json_data), status.HTTP_200_OK
+    except MultiChainError as ex:
+        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
+    except (ValueError, Exception) as ex:
+        return (jsonify({"error": {"message": str(ex)}}), status.HTTP_400_BAD_REQUEST)
 
 
 """
@@ -630,10 +464,7 @@ def get_stream_items():
         request_args = request.args
 
         if not request_args:
-            return (
-                jsonify({"error": "No parameters were passed!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("No parameters were passed!")
 
         blockchain_name = request_args.get(BLOCKCHAIN_NAME_FIELD_NAME)
         stream_name = request_args.get(STREAM_NAME_FIELD_NAME)
@@ -643,40 +474,24 @@ def get_stream_items():
         local_ordering = DataController.DEFAULT_LOCAL_ORDERING_VALUE
 
         if blockchain_name is None:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + BLOCKCHAIN_NAME_FIELD_NAME
-                        + " parameter was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + BLOCKCHAIN_NAME_FIELD_NAME
+                + " parameter was not found in the request!"
             )
 
         if stream_name is None:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + STREAM_NAME_FIELD_NAME
-                        + " parameter was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + STREAM_NAME_FIELD_NAME
+                + " parameter was not found in the request!"
             )
 
         if not blockchain_name or not blockchain_name.strip():
-            return (
-                jsonify({"error": "The blockchain name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The blockchain name can't be empty!")
 
         if not stream_name or not stream_name.strip():
-            return (
-                jsonify({"error": "The stream name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The stream name can't be empty!")
 
         if not request_args.get(VERBOSE_FIELD_NAME) is None:
             verbose = convert_to_boolean(
@@ -699,11 +514,11 @@ def get_stream_items():
         json_data = DataController.get_stream_items(
             blockchain_name, stream_name, verbose, count, start, local_ordering
         )
-        return jsonify({"Data": json_data}), status.HTTP_200_OK
-    except ValueError as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
-    except Exception as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+        return jsonify(json_data), status.HTTP_200_OK
+    except MultiChainError as ex:
+        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
+    except (ValueError, Exception) as ex:
+        return (jsonify({"error": {"message": str(ex)}}), status.HTTP_400_BAD_REQUEST)
 
 
 """
@@ -725,10 +540,7 @@ def get_stream_publishers():
         request_args = request.args
 
         if not request_args:
-            return (
-                jsonify({"error": "No parameters were passed!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("No parameters were passed!")
 
         blockchain_name = request_args.get(BLOCKCHAIN_NAME_FIELD_NAME)
         stream_name = request_args.get(STREAM_NAME_FIELD_NAME)
@@ -739,53 +551,32 @@ def get_stream_publishers():
         local_ordering = DataController.DEFAULT_LOCAL_ORDERING_VALUE
 
         if blockchain_name is None:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + BLOCKCHAIN_NAME_FIELD_NAME
-                        + " parameter was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + BLOCKCHAIN_NAME_FIELD_NAME
+                + " parameter was not found in the request!"
             )
 
         if stream_name is None:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + STREAM_NAME_FIELD_NAME
-                        + " parameter was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
+            raise ValueError(
+                "The "
+                + STREAM_NAME_FIELD_NAME
+                + " parameter was not found in the request!"
             )
 
         if not blockchain_name or not blockchain_name.strip():
-            return (
-                jsonify({"error": "The blockchain name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The blockchain name can't be empty!")
 
         if not stream_name or not stream_name.strip():
-            return (
-                jsonify({"error": "The stream name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The stream name can't be empty!")
 
         if request_args.get(PUBLISHERS_FIELD_NAME):
             publishers = request_args.getlist(PUBLISHERS_PARAMETER_NAME)
             if not publishers:
-                return (
-                    jsonify({"error": "The list of publishers can't be empty!"}),
-                    status.HTTP_400_BAD_REQUEST,
-                )
+                raise ValueError("The list of publishers can't be empty!")
+
             if not isinstance(publishers, list):
-                return (
-                    jsonify({"error": "You must pass a list of publishers"}),
-                    status.HTTP_400_BAD_REQUEST,
-                )
+                raise ValueError("You must pass a list of publishers")
 
         if not request_args.get(VERBOSE_FIELD_NAME) is None:
             verbose = convert_to_boolean(
@@ -814,9 +605,9 @@ def get_stream_publishers():
             start,
             local_ordering,
         )
-        return jsonify({"Data": json_data}), status.HTTP_200_OK
-    except ValueError as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
-    except Exception as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+        return jsonify(json_data), status.HTTP_200_OK
+    except MultiChainError as ex:
+        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
+    except (ValueError, Exception) as ex:
+        return (jsonify({"error": {"message": str(ex)}}), status.HTTP_400_BAD_REQUEST)
 

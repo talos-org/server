@@ -97,7 +97,6 @@ class SystemStatusController:
             if not blockchain_name:
                 raise ValueError("Blockchain name can't be empty")
 
-
             if not nodes_connect_permisison:
                 raise ValueError(
                     "The list of nodes with connection permission is empty"

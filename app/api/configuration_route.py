@@ -246,14 +246,9 @@ def get_node_address():
         return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
 
 
-"""
-Returns the node address of the provided blockchain name
-The following data is expected to be passed in as query parameters:
-    "blockchainName": blockchain name
-"""
 
 """
-Deploys the created chain
+Checks if the passed in blockchain name already exists
 The following data is expected in the body of the request:
     "blockchainName": blockchain name
 """
@@ -285,6 +280,29 @@ def check_blockchain_name():
 
         else:
             return jsonify({"status": "Valid blockchain name"}), status.HTTP_200_OK
+
+    except MultiChainError as ex:
+        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
+    except Exception as ex:
+        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+
+
+
+
+"""
+Returns all the existing blockchains on the requesting node
+No parameters needed
+"""
+@mod.route("/get_blockchains", methods=["GET"])
+def get_blockchains():
+    try:
+
+        existing_blockchains=cc.get_blockchains()
+
+        return (
+            jsonify({"Existing Blockchains": existing_blockchains}),
+            status.HTTP_200_OK
+        )
 
     except MultiChainError as ex:
         return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST

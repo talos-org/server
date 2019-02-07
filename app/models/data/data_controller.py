@@ -413,12 +413,11 @@ class DataController:
         local_ordering: bool = DEFAULT_LOCAL_ORDERING_VALUE,
     ):
         """
-        Provides information about publishers who have written to stream, 
-        passed as a stream name. Pass an array for multiple publishers, or 
-        use the default value for all publishers. Set verbose to true to include 
-        information about  the first and last item by each publisher shown. 
-        See liststreamitems for details of the count, start and local-ordering 
-        parameters, relevant only if all publishers is requested.
+        Provides information about stream keys that belong to a stream, 
+        passed as a stream name. Pass an array of keys for specifc infromation regarding
+        the provided keys, or use the default value for all keys. Set verbose to true to include 
+        information about the first and last item by each key shown. 
+        See liststreamitems for details of the count, start and local-ordering parameters.
         """
         try:
             blockchain_name = blockchain_name.strip()

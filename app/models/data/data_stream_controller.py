@@ -169,31 +169,3 @@ class DataStreamController:
             raise err
         except Exception as err:
             raise err
-
-    @staticmethod
-    def resubscribe(blockchain_name: str, streams: list):
-        """
-        Instructs the node to start tracking one or more stream(s). 
-        These are specified using an array of one or more items. 
-        The node will reindex all items from when the streams 
-        were created, as well as those in other subscribed entities. 
-        Returns True if successful.
-        """
-        try:
-            blockchain_name = blockchain_name.strip()
-            if not blockchain_name:
-                raise ValueError("Blockchain name can't be empty")
-
-            streams = [stream.strip() for stream in streams if stream.strip()]
-            if not streams:
-                raise ValueError("Stream names can't be empty")
-
-            return DataStreamController.unsubscribe(
-                blockchain_name, streams
-            ) and DataStreamController.subscribe(blockchain_name, streams, True)
-        except CalledProcessError as err:
-            raise MultiChainError(err.stderr)
-        except ValueError as err:
-            raise err
-        except Exception as err:
-            raise err

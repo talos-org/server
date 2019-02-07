@@ -611,3 +611,93 @@ def get_stream_publishers():
     except (ValueError, Exception) as ex:
         return (jsonify({"error": {"message": str(ex)}}), status.HTTP_400_BAD_REQUEST)
 
+
+"""
+Provides information about keys in a stream
+The following data is expected to be passed in as query parameters:
+    "blockchainName": blockchain name
+    "streamName": stream name
+    OPTIONAL: "keys": list of keys that belong to the stream. This will cause the function to only return information related to the keys in the list
+    OPTIONAL: "verbose": Set verbose to true for additional information about each item’s transaction
+    OPTIONAL: "count": retrieve part of the list only ex. only 5 items
+    OPTIONAL: "start": deals with the ordering of the data retrieved, with negative start values (like the default) indicating the most recent items
+    OPTIONAL: "localOrdering": Set local-ordering to true to order items by when first seen by this node, rather than their order in the chain
+"""
+
+
+@mod.route("/get_stream_keys", methods=["GET"])
+def get_stream_keys():
+    try:
+        request_args = request.args
+
+        if not request_args:
+            raise ValueError("No parameters were passed!")
+
+        blockchain_name = request_args.get(BLOCKCHAIN_NAME_FIELD_NAME)
+        stream_name = request_args.get(STREAM_NAME_FIELD_NAME)
+        stream_keys = DataController.DEFAULT_KEYS_LIST_CONTENT
+        verbose = DataController.DEFAULT_VERBOSE_VALUE
+        count = DataController.DEFAULT_ITEM_COUNT_VALUE
+        start = DataController.DEFAULT_ITEM_START_VALUE
+        local_ordering = DataController.DEFAULT_LOCAL_ORDERING_VALUE
+
+        if blockchain_name is None:
+            raise ValueError(
+                "The "
+                + BLOCKCHAIN_NAME_FIELD_NAME
+                + " parameter was not found in the request!"
+            )
+
+        if stream_name is None:
+            raise ValueError(
+                "The "
+                + STREAM_NAME_FIELD_NAME
+                + " parameter was not found in the request!"
+            )
+
+        if not blockchain_name or not blockchain_name.strip():
+            raise ValueError("The blockchain name can't be empty!")
+
+        if not stream_name or not stream_name.strip():
+            raise ValueError("The stream name can't be empty!")
+
+        if request_args.get(KEYS_FIELD_NAME):
+            stream_keys = request_args.getlist(KEYS_PARAMETER_NAME)
+            if not stream_keys:
+                raise ValueError("The list of keys that belong to the stream can't be empty!")
+
+            if not isinstance(stream_keys, list):
+                raise ValueError("You must pass a list of keys that belong to the stream")
+
+        if not request_args.get(VERBOSE_FIELD_NAME) is None:
+            verbose = convert_to_boolean(
+                VERBOSE_FIELD_NAME, request_args.get(VERBOSE_FIELD_NAME)
+            )
+
+        if not request_args.get(COUNT_FIELD_NAME) is None:
+            count = convert_to_int(COUNT_FIELD_NAME, request_args.get(COUNT_FIELD_NAME))
+
+        if not request_args.get(START_FIELD_NAME) is None:
+            start = convert_to_int(START_FIELD_NAME, request_args.get(START_FIELD_NAME))
+
+        if not request_args.get(LOCAL_ORDERING_FIELD_NAME) is None:
+            local_ordering = convert_to_int(
+                LOCAL_ORDERING_FIELD_NAME, request_args.get(LOCAL_ORDERING_FIELD_NAME)
+            )
+
+        blockchain_name = blockchain_name.strip()
+        stream_name = stream_name.strip()
+        json_data = DataController.get_stream_keys(
+            blockchain_name,
+            stream_name,
+            stream_keys,
+            verbose,
+            count,
+            start,
+            local_ordering,
+        )
+        return jsonify(json_data), status.HTTP_200_OK
+    except MultiChainError as ex:
+        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
+    except (ValueError, Exception) as ex:
+        return (jsonify({"error": {"message": str(ex)}}), status.HTTP_400_BAD_REQUEST)

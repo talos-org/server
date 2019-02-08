@@ -18,6 +18,7 @@ class DataController:
     DEFAULT_ITEM_START_VALUE = -MAX_DATA_COUNT
     DEFAULT_LOCAL_ORDERING_VALUE = False
     DEFAULT_PUBLISHERS_LIST_CONTENT = None
+    DEFAULT_KEYS_LIST_CONTENT = None
 
     @staticmethod
     def publish_item(blockchain_name: str, stream: str, keys: list, json_data: str):
@@ -394,6 +395,63 @@ class DataController:
             publishers = run(args, check=True, capture_output=True)
 
             return json.loads(publishers.stdout)
+        except CalledProcessError as err:
+            raise MultiChainError(err.stderr)
+        except ValueError as err:
+            raise err
+        except Exception as err:
+            raise err
+    
+    @staticmethod
+    def get_stream_keys(
+        blockchain_name: str,
+        stream: str,
+        keys: list = DEFAULT_KEYS_LIST_CONTENT,
+        verbose: bool = DEFAULT_VERBOSE_VALUE,
+        count: int = DEFAULT_ITEM_COUNT_VALUE,
+        start: int = DEFAULT_ITEM_START_VALUE,
+        local_ordering: bool = DEFAULT_LOCAL_ORDERING_VALUE,
+    ):
+        """
+        Provides information about stream keys that belong to a stream, 
+        passed as a stream name. Pass an array of keys for specifc infromation regarding
+        the provided keys, or use the default value for all keys. Set verbose to true to include 
+        information about the first and last item by each key shown. 
+        See liststreamitems for details of the count, start and local-ordering parameters.
+        """
+        try:
+            blockchain_name = blockchain_name.strip()
+            stream = stream.strip()
+
+            if not stream:
+                raise ValueError("Stream name can't be empty")
+
+            if not blockchain_name:
+                raise ValueError("Blockchain name can't be empty")
+
+            keys_selector = "*"
+            if keys is not None:
+                keys = [
+                    key.strip() for key in keys if key.strip()
+                ]
+                if not keys:
+                    raise ValueError("Addresses can't be empty")
+                keys_selector = json.dumps(keys)
+
+            args = [
+                DataController.MULTICHAIN_ARG,
+                blockchain_name,
+                DataController.GET_STREAM_KEYS_ARG,
+                stream,
+                keys_selector,
+                json.dumps(verbose),
+                json.dumps(count),
+                json.dumps(start),
+                json.dumps(local_ordering),
+            ]
+            stream_keys = run(args, check=True, capture_output=True)
+
+            return json.loads(stream_keys.stdout)
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
         except ValueError as err:

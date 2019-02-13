@@ -6,6 +6,7 @@ Backend for Talos, a configurable platform for developing and deploying blockcha
 - Python 3.7
 - pip3
 - Git
+- Linux Machine (Mac and Windows support will be added at a later time)
 
 # Installation
 `$ git clone https://github.com/talos-org/server.git`

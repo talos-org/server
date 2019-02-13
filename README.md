@@ -18,6 +18,16 @@ Backend for Talos, a configurable platform for developing and deploying blockcha
 
 `(venv) $ pip3 install -r requirements.txt`
 
+# Install MultiChain
+
+Make sure you are in the `server` directory then run the following command:<br>
+
+`$ sudo ./multichain.sh`
+
+
+
+
+
 # Start server
 Make sure you are in the `server` directory and you are still in the virtual environment then run the following command:<br>
 `(venv) $ python3 run.py`

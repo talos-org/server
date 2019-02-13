@@ -2,309 +2,205 @@ from flask import Flask, request, jsonify, Blueprint
 from flask_api import status
 from app.models.configuration.configuration_controller import ConfigurationController
 from app.models.exception.multichain_error import MultiChainError
+import json
+from flask_restplus import Namespace, Resource, reqparse, inputs, fields
+
 
 BLOCKCHAIN_NAME_FIELD_NAME = "blockchainName"
 PARAMETERS_FIELD_NAME = "params"
+DESCRIPTION_FIELD_NAME = "description"
+MAX_BLOCK_SIZE_FIELD_NAME = "maxBlockSize"
+TARGET_BLOCK_TIME = "targetBlockTime"
+MINING_TURNOVER = "miningTurnover"
 
 
-mod = Blueprint("configuration", __name__)
-
+config_ns = Namespace("configuration", description="Configuration API")
 cc = ConfigurationController()
 
-"""
-Creates the blockchain with the provided name
-The following data is expected in the body of the request:
-    "blockchainName": blockchain name
-"""
+blockchain_model = config_ns.model(
+    "Blockchain",
+    {
+        BLOCKCHAIN_NAME_FIELD_NAME: fields.String(
+            required=True, description="The blockchain name"
+        )
+    },
+)
+
+blockchain_parser = reqparse.RequestParser(bundle_errors=True)
+blockchain_parser.add_argument(
+    BLOCKCHAIN_NAME_FIELD_NAME, location="args", type=str, required=True
+)
 
 
-@mod.route("/create_chain", methods=["POST"])
-def create_chain():
-    try:
-        json_request = request.get_json()
-
-        if not json_request:
-            return (
-                jsonify({"error": "The request body is empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
-
-        if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
-            return (
-                jsonify(
-                    {"error": "The blockchainName field was not found in the request!"}
-                ),
-                status.HTTP_400_BAD_REQUEST,
-            )
-
-        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
+@config_ns.route("/create_chain")
+class CreateChain(Resource):
+    @config_ns.expect(blockchain_model, validate=True)
+    @config_ns.doc(
+        responses={
+            status.HTTP_400_BAD_REQUEST: "BAD REQUEST",
+            status.HTTP_200_OK: "SUCCESS",
+        }
+    )
+    def post(self):
+        """
+        Creates the blockchain with the provided name
+        """
+        blockchain_name = config_ns.payload[BLOCKCHAIN_NAME_FIELD_NAME]
 
         if not blockchain_name or not blockchain_name.strip():
-            return (
-                jsonify({"error": "The blockchain name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The blockchain name can't be empty!")
 
         blockchain_name = blockchain_name.strip()
         cc.create_chain(blockchain_name)
-        return jsonify({"Status": blockchain_name + " created!"}), status.HTTP_200_OK
-    except MultiChainError as ex:
-        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
-    except Exception as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+        return ({"status": blockchain_name + " created!"}, status.HTTP_200_OK)
 
 
-"""
-Configures the parameters in the param.dat using the blockchain name provided
-The following data is expected in the body of the request:
-    "blockchainName":
-    "params" : [
-        "description" : 
-        "maxBlockSize" :
-        "targetBlockTime" :
-        "miningTurnover" :
-    ]
-"""
+params_model = config_ns.model(
+    "Parameters",
+    {
+        PARAMETERS_FIELD_NAME: fields.String(
+            required=True, desription="Blockchain description"
+        ),
+        MAX_BLOCK_SIZE_FIELD_NAME: fields.Integer(required=True, description=""),
+        TARGET_BLOCK_TIME: fields.Integer(required=True, description=""),
+        MINING_TURNOVER: fields.Integer(required=True, description=""),
+    },
+)
+
+config_parameters_model = config_ns.model(
+    "Configuation",
+    {
+        BLOCKCHAIN_NAME_FIELD_NAME: fields.String(
+            required=True, description="The blockchain name"
+        ),
+        PARAMETERS_FIELD_NAME: fields.List(fields.Nested(params_model), required=True),
+    },
+)
 
 
-@mod.route("/config_parameters", methods=["POST"])
-def config_params():
-    try:
-        json_request = request.get_json()
+@config_ns.route("/config_parameters")
+class ConfigureBlockchain(Resource):
+    @config_ns.expect(config_parameters_model, validate=True)
+    @config_ns.doc(
+        responses={
+            status.HTTP_400_BAD_REQUEST: "BAD REQUEST",
+            status.HTTP_200_OK: "SUCCESS",
+        }
+    )
+    def post(self):
+        """
+        Configures the parameters in the param.dat using the blockchain name provided
+        """
 
-        if not json_request:
-            return (
-                jsonify({"error": "The request body is empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
-
-        if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + BLOCKCHAIN_NAME_FIELD_NAME
-                        + " field was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
-            )
-
-        if not PARAMETERS_FIELD_NAME in json_request:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + PARAMETERS_FIELD_NAME
-                        + " field was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
-            )
-
-        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
-        parameters = json_request[PARAMETERS_FIELD_NAME]
+        blockchain_name = config_ns.payload[BLOCKCHAIN_NAME_FIELD_NAME]
+        parameters = config_ns.payload[PARAMETERS_FIELD_NAME]
 
         if not blockchain_name or not blockchain_name.strip():
-            return (
-                jsonify({"error": "The blockchain name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
-
-        if not parameters:
-            return jsonify(
-                {
-                    "error": "No parameters were supplied, please provide the required parameters!"
-                }
-            )
+            raise ValueError("The blockchain name can't be empty!")
 
         blockchain_name = blockchain_name.strip()
-        required_parameters = [
-            "description",
-            "maxblocksize",
-            "targetblocktime",
-            "miningturnover",
-        ]
-
-        original_number_of_keys = len(parameters)
-        parameters = {
-            key: value
-            for key, value in parameters.items()
-            if key.lower() in required_parameters
-        }
-        new_number_of_keys = len(parameters)
-
-        if new_number_of_keys < original_number_of_keys:
-            return jsonify(
-                {
-                    "error": "Some of The required parameters are missing. Expecting: "
-                    + str(len(required_parameters))
-                    + " parameters, receieved: "
-                    + str(new_number_of_keys)
-                    + " parameters."
-                }
-            )
 
         cc.config_params(blockchain_name, parameters)
-        return jsonify({"Status": "Configurations Changed!"}), status.HTTP_200_OK
-    except Exception as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+        return {"status": "Configurations Changed!"}, status.HTTP_200_OK
 
 
-"""
-Deploys the created chain
-The following data is expected in the body of the request:
-    "blockchainName": blockchain name
-"""
-@mod.route("/deploy_chain", methods=["POST"])
-def deploy_chain():
-    try:
-        json_request = request.get_json()
+@config_ns.route("/deploy_chain")
+class DeployChain(Resource):
+    @config_ns.expect(blockchain_model, validate=True)
+    @config_ns.doc(
+        responses={
+            status.HTTP_400_BAD_REQUEST: "BAD REQUEST",
+            status.HTTP_200_OK: "SUCCESS",
+        }
+    )
+    def post(self):
+        """
+        Deploys the created blockchain
+        """
+        blockchain_name = config_ns.payload[BLOCKCHAIN_NAME_FIELD_NAME]
 
-        if not json_request:
-            return (
-                jsonify({"error": "The request body is empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
-
-        if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
-            return (
-                jsonify(
-                    {"error": "The blockchainName field was not found in the request!"}
-                ),
-                status.HTTP_400_BAD_REQUEST,
-            )
-
-        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
         if not blockchain_name or not blockchain_name.strip():
-            return (
-                jsonify({"error": "The blockchain name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The blockchain name can't be empty!")
 
         blockchain_name = blockchain_name.strip()
         if cc.deploy_blockchain(blockchain_name):
-            return (
-                jsonify({"Status": blockchain_name + " Deployed"}),
-                status.HTTP_200_OK,
-            )
-
-    except MultiChainError as ex:
-        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
-    except Exception as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+            return ({"status": blockchain_name + " Deployed"}, status.HTTP_200_OK)
 
 
-"""
-Returns the node address of the provided blockchain name
-The following data is expected to be passed in as query parameters:
-    "blockchainName": blockchain name
-"""
+@config_ns.route("/get_node_address")
+@config_ns.doc(params={BLOCKCHAIN_NAME_FIELD_NAME: "blockchain name"})
+class NodeAddress(Resource):
+    @config_ns.expect(blockchain_parser)
+    @config_ns.doc(
+        responses={
+            status.HTTP_400_BAD_REQUEST: "BAD REQUEST",
+            status.HTTP_200_OK: "SUCCESS",
+        }
+    )
+    def get(self):
+        """
+        Returns the node address of the provided blockchain name
+        """
+        args = blockchain_parser.parse_args(strict=True)
 
-@mod.route("/get_node_address", methods=["GET"])
-def get_node_address():
-    try:
-        request_args = request.args
-
-        if not request_args:
-            return (
-                jsonify({"error": "No parameters were passed!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
-
-        blockchain_name = request_args.get(BLOCKCHAIN_NAME_FIELD_NAME)
-
-        if blockchain_name is None:
-            return (
-                jsonify(
-                    {
-                        "error": "The "
-                        + BLOCKCHAIN_NAME_FIELD_NAME
-                        + " parameter was not found in the request!"
-                    }
-                ),
-                status.HTTP_400_BAD_REQUEST,
-            )
+        blockchain_name = args[BLOCKCHAIN_NAME_FIELD_NAME]
 
         if not blockchain_name or not blockchain_name.strip():
-            return (
-                jsonify({"error": "The blockchain name can't be empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValueError("The blockchain name can't be empty!")
 
         blockchain_name = blockchain_name.strip()
 
         return (
-            jsonify({"nodeAddress": cc.get_node_address(blockchain_name)}),
+            {"nodeAddress": cc.get_node_address(blockchain_name)},
             status.HTTP_200_OK,
         )
 
-    except MultiChainError as ex:
-        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
 
-    except Exception as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+@config_ns.route("/check_blockchain_name")
+@config_ns.doc(params={BLOCKCHAIN_NAME_FIELD_NAME: "blockchain name"})
+class BlockchainExist(Resource):
+    @config_ns.expect(blockchain_parser)
+    @config_ns.doc(
+        responses={
+            status.HTTP_400_BAD_REQUEST: "BAD REQUEST",
+            status.HTTP_200_OK: "SUCCESS",
+        }
+    )
+    def get(self):
+        """
+        Determines wheher the blockchain exists or not
+        """
+        args = blockchain_parser.parse_args(strict=True)
 
+        blockchain_name = args[BLOCKCHAIN_NAME_FIELD_NAME]
 
+        if not blockchain_name or not blockchain_name.strip():
+            raise ValueError("The blockchain name can't be empty!")
 
-"""
-Checks if the passed in blockchain name already exists
-The following data is expected in the body of the request:
-    "blockchainName": blockchain name
-"""
-@mod.route("/check_blockchain_name", methods=["POST"])
-def check_blockchain_name():
-    try:
-        json_request = request.get_json()
+        blockchain_name = blockchain_name.strip()
+        blockchain_status = "Blockchain name already exists!"
 
-        if not json_request:
-            return (
-                jsonify({"error": "The request body is empty!"}),
-                status.HTTP_400_BAD_REQUEST,
-            )
+        existing_blockchains = cc.get_blockchains()
 
-        if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
-            return (
-                jsonify(
-                    {"error": "The blockchainName field was not found in the request!"}
-                ),
-                status.HTTP_400_BAD_REQUEST,
-            )
+        if blockchain_name not in existing_blockchains:
+            blockchain_status = "Valid blockchain name"
 
-        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
-
-        existing_blockchains=cc.get_blockchains()
-
-        if blockchain_name in existing_blockchains:
-            return jsonify({"status": "Blockchain name already exists!"}), status.HTTP_400_BAD_REQUEST
-
-        else:
-            return jsonify({"status": "Valid blockchain name"}), status.HTTP_200_OK
-
-    except MultiChainError as ex:
-        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
-    except Exception as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST
+        return {"status": blockchain_status}, status.HTTP_200_OK
 
 
+@config_ns.route("/get_blockchains")
+class Blockchain(Resource):
+    @config_ns.doc(
+        responses={
+            status.HTTP_400_BAD_REQUEST: "BAD REQUEST",
+            status.HTTP_200_OK: "SUCCESS",
+        }
+    )
+    def get(self):
+        """
+        Returns all the existing blockchains on the requesting node
+        """
+        existing_blockchains = cc.get_blockchains()
 
+        return ({"blockchains": existing_blockchains}, status.HTTP_200_OK)
 
-"""
-Returns all the existing blockchains on the requesting node
-No parameters needed
-"""
-@mod.route("/get_blockchains", methods=["GET"])
-def get_blockchains():
-    try:
-
-        existing_blockchains=cc.get_blockchains()
-
-        return (
-            jsonify({"Existing Blockchains": existing_blockchains}),
-            status.HTTP_200_OK
-        )
-
-    except MultiChainError as ex:
-        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
-    except Exception as ex:
-        return jsonify({"error": str(ex)}), status.HTTP_400_BAD_REQUEST

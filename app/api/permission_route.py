@@ -3,9 +3,7 @@ from flask_api import status
 from app.models.permission.permission_controller import PermissionController
 from app.models.exception.multichain_error import MultiChainError
 import json
-
-mod = Blueprint("permission", __name__)
-
+from flask_restplus import Namespace, Resource, reqparse, inputs, fields
 
 BLOCKCHAIN_NAME_FIELD_NAME = "blockchainName"
 ADDRESSES_FIELD_NAME = "addresses"
@@ -15,53 +13,44 @@ PERMISSION_FIELD_NAME = "permission"
 STREAM_NAME_FIELD_NAME = "streamName"
 VERBOSE_FIELD_NAME = "verbose"
 
-
-"""
-Grants global permissions to the provided addresses.
-The following data is expected in the body of the request:
-    "blockchainName": blockchain name
-    "addresses": list of addresses
-    "permissions": list of permissions
-"""
+permission_ns = Namespace("permission", description="Permission API")
 
 
-@mod.route("/grant_global_permission", methods=["POST"])
-def grant_global_permission():
-    try:
-        json_request = request.get_json()
+address_permission_model = permission_ns.model(
+    "Global Permission",
+    {
+        BLOCKCHAIN_NAME_FIELD_NAME: fields.String(
+            required=True, description="The blockchain name"
+        ),
+        ADDRESSES_FIELD_NAME: fields.List(
+            fields.String, required=True, description="list of addresses"
+        ),
+        PERMISSIONS_FIELD_NAME: fields.Boolean(
+            required=True, description="list of permissions"
+        ),
+    },
+)
 
-        if not json_request:
-            raise ValueError("The request body is empty!")
 
-        if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
-            raise ValueError(
-                "The "
-                + BLOCKCHAIN_NAME_FIELD_NAME
-                + " field was not found in the request!"
-            )
-
-        if not ADDRESSES_FIELD_NAME in json_request:
-            raise ValueError(
-                "The " + ADDRESSES_FIELD_NAME + " field was not found in the request!"
-            )
-
-        if not PERMISSIONS_FIELD_NAME in json_request:
-            raise ValueError(
-                "The " + PERMISSIONS_FIELD_NAME + " field was not found in the request!"
-            )
-
-        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
-        addresses = json_request[ADDRESSES_FIELD_NAME]
-        permissions = json_request[PERMISSIONS_FIELD_NAME]
+@permission_ns.route("/grant_global_permission")
+class GrantGlobalPermission(Resource):
+    @permission_ns.expect(address_permission_model, validate=True)
+    @permission_ns.doc(
+        responses={
+            status.HTTP_400_BAD_REQUEST: "BAD REQUEST",
+            status.HTTP_200_OK: "SUCCESS",
+        }
+    )
+    def post(self):
+        """
+        Grants global permissions to the provided addresses.
+        """
+        blockchain_name = permission_ns.payload[BLOCKCHAIN_NAME_FIELD_NAME]
+        addresses = permission_ns.payload[ADDRESSES_FIELD_NAME]
+        permissions = permission_ns.payload[PERMISSIONS_FIELD_NAME]
 
         if not blockchain_name or not blockchain_name.strip():
             raise ValueError("The provided blockchain name can't be empty!")
-
-        if not addresses:
-            raise ValueError("The provided addresses can't be empty!")
-
-        if not permissions:
-            raise ValueError("The provided permissions can't be empty!")
 
         blockchain_name = blockchain_name.strip()
         output = (
@@ -70,295 +59,181 @@ def grant_global_permission():
             )
         ).decode("utf-8")
         output = output[:-1]
-        return jsonify({"transactionID": output}), status.HTTP_200_OK
-    except MultiChainError as ex:
-        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
-    except (ValueError, Exception) as ex:
-        return (jsonify({"error": {"message": str(ex)}}), status.HTTP_400_BAD_REQUEST)
+        return {"transactionID": output}, status.HTTP_200_OK
 
+
+stream_permission_model = permission_ns.clone(
+    "Stream permission",
+    address_permission_model,
+    {STREAM_NAME_FIELD_NAME: fields.String(required=True, description="stream name")},
+)
 
 """
 Grants stream permissions to the provided addresses and stream.
 The following data is expected in the body of the request:
     "blockchainName": blockchain name
     "address": address
-    "streamName": stream name
-    "permission": permissions
+    "streamName": 
+    "permissions": permissions
 """
 
 
-@mod.route("/grant_stream_permission", methods=["POST"])
-def grant_stream_permission():
-    try:
-        json_request = request.get_json()
-
-        if not json_request:
-            raise ValueError("The request body is empty!")
-
-        if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
-            raise ValueError(
-                "The "
-                + BLOCKCHAIN_NAME_FIELD_NAME
-                + " field was not found in the request!"
-            )
-
-        if not ADDRESS_FIELD_NAME in json_request:
-            raise ValueError(
-                "The " + ADDRESS_FIELD_NAME + " field was not found in the request!"
-            )
-
-        if not STREAM_NAME_FIELD_NAME in json_request:
-            raise ValueError(
-                "The " + STREAM_NAME_FIELD_NAME + " field was not found in the request!"
-            )
-
-        if not PERMISSION_FIELD_NAME in json_request:
-            raise ValueError(
-                "The " + PERMISSION_FIELD_NAME + " field was not found in the request!"
-            )
-
-        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
-        address = json_request[ADDRESS_FIELD_NAME]
-        stream_name = json_request[STREAM_NAME_FIELD_NAME]
-        permission = json_request[PERMISSION_FIELD_NAME]
+@permission_ns.route("/grant_stream_permission")
+class GrantStreamPermission(Resource):
+    @permission_ns.expect(stream_permission_model, validate=True)
+    @permission_ns.doc(
+        responses={
+            status.HTTP_400_BAD_REQUEST: "BAD REQUEST",
+            status.HTTP_200_OK: "SUCCESS",
+        }
+    )
+    def post(self):
+        blockchain_name = permission_ns.payload[BLOCKCHAIN_NAME_FIELD_NAME]
+        addresses = permission_ns.payload[ADDRESSES_FIELD_NAME]
+        stream_name = permission_ns.payload[STREAM_NAME_FIELD_NAME]
+        permissions = permission_ns.payload[PERMISSIONS_FIELD_NAME]
 
         if not blockchain_name or not blockchain_name.strip():
             raise ValueError("The provided blockchain name can't be empty!")
-
-        if not address or not address.strip():
-            raise ValueError("The provided addresses can't be empty!")
 
         if not stream_name or not stream_name.strip():
             raise ValueError("The provided stream name can't be empty!")
 
-        if not permission or not permission.strip():
-            raise ValueError("The provided permissions can't be empty!")
-
         blockchain_name = blockchain_name.strip()
-        address = address.strip()
         stream_name = stream_name.strip()
-        permission = permission.strip()
         transaction_id = PermissionController.grant_stream_permission(
-            blockchain_name, address, stream_name, permission
+            blockchain_name, addresses, stream_name, permissions
         ).decode("utf-8")
         transaction_id = transaction_id[:-1]
-        return jsonify({"transactionID": transaction_id}), status.HTTP_200_OK
-    except MultiChainError as ex:
-        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
-    except (ValueError, Exception) as ex:
-        return (jsonify({"error": {"message": str(ex)}}), status.HTTP_400_BAD_REQUEST)
+        return {"transactionID": transaction_id}, status.HTTP_200_OK
 
 
-"""
-Revokes global permissions to the provided addresses.
-The following data is expected in the body of the request:
-    "blockchainName": blockchain name
-    "addresses": list of addresses
-    "permissions": list of permissions
-"""
-
-
-@mod.route("/revoke_global_permission", methods=["POST"])
-def revoke_global_permission():
-    try:
-        json_request = request.get_json()
-
-        if not json_request:
-            raise ValueError("The request body is empty!")
-
-        if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
-            raise ValueError(
-                "The "
-                + BLOCKCHAIN_NAME_FIELD_NAME
-                + " field was not found in the request!"
-            )
-
-        if not ADDRESSES_FIELD_NAME in json_request:
-            raise ValueError(
-                "The " + ADDRESSES_FIELD_NAME + " field was not found in the request!"
-            )
-
-        if not PERMISSIONS_FIELD_NAME in json_request:
-            raise ValueError(
-                "The " + PERMISSIONS_FIELD_NAME + " field was not found in the request!"
-            )
-
-        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
-        addresses = json_request[ADDRESSES_FIELD_NAME]
-        permissions = json_request[PERMISSIONS_FIELD_NAME]
+@permission_ns.route("/revoke_global_permission")
+class RevokeGlobalPermission(Resource):
+    @permission_ns.expect(address_permission_model, validate=True)
+    @permission_ns.doc(
+        responses={
+            status.HTTP_400_BAD_REQUEST: "BAD REQUEST",
+            status.HTTP_200_OK: "SUCCESS",
+        }
+    )
+    def post(self):
+        """
+        Revokes global permissions to the provided addresses.
+        """
+        blockchain_name = permission_ns.payload[BLOCKCHAIN_NAME_FIELD_NAME]
+        addresses = permission_ns.payload[ADDRESSES_FIELD_NAME]
+        permissions = permission_ns.payload[PERMISSIONS_FIELD_NAME]
 
         if not blockchain_name or not blockchain_name.strip():
             raise ValueError("The provided blockchain name can't be empty!")
 
-        if not addresses or not addresses.strip():
-            raise ValueError("The provided addresses can't be empty!")
-
-        if not permissions or not permissions.strip():
-            raise ValueError("The provided permissions can't be empty!")
-
         blockchain_name = blockchain_name.strip()
-        addresses = addresses.strip()
-        permissions = permissions.strip()
 
         transaction_id = PermissionController.revoke_global_permission(
             blockchain_name, addresses, permissions
         ).decode("utf-8")
         transaction_id = transaction_id[:-1]
 
-        return jsonify({"transactionID": transaction_id}), status.HTTP_200_OK
-    except MultiChainError as ex:
-        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
-    except (ValueError, Exception) as ex:
-        return (jsonify({"error": {"message": str(ex)}}), status.HTTP_400_BAD_REQUEST)
+        return {"transactionID": transaction_id}, status.HTTP_200_OK
 
 
-"""
-Revoke stream permissions to the provided addresses and stream.
-The following data is expected in the body of the request:
-    "blockchainName": blockchain name
-    "address": address
-    "streamName": stream name
-    "permission": permissions
-"""
-
-
-@mod.route("/revoke_stream_permission", methods=["POST"])
-def revoke_stream_permission():
-    try:
-        json_request = request.get_json()
-
-        if not json_request:
-            raise ValueError("The request body is empty!")
-
-        if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
-            raise ValueError(
-                "The "
-                + BLOCKCHAIN_NAME_FIELD_NAME
-                + " field was not found in the request!"
-            )
-
-        if not ADDRESS_FIELD_NAME in json_request:
-            raise ValueError(
-                "The " + ADDRESS_FIELD_NAME + " field was not found in the request!"
-            )
-
-        if not STREAM_NAME_FIELD_NAME in json_request:
-            raise ValueError(
-                "The " + STREAM_NAME_FIELD_NAME + " field was not found in the request!"
-            )
-
-        if not PERMISSION_FIELD_NAME in json_request:
-            raise ValueError(
-                "The " + PERMISSION_FIELD_NAME + " field was not found in the request!"
-            )
-
-        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
-        address = json_request[ADDRESS_FIELD_NAME]
-        stream_name = json_request[STREAM_NAME_FIELD_NAME]
-        permission = json_request[PERMISSION_FIELD_NAME]
+@permission_ns.route("/revoke_stream_permission")
+class RevokeStreamPermission(Resource):
+    @permission_ns.expect(stream_permission_model, validate=True)
+    @permission_ns.doc(
+        responses={
+            status.HTTP_400_BAD_REQUEST: "BAD REQUEST",
+            status.HTTP_200_OK: "SUCCESS",
+        }
+    )
+    def post(self):
+        """
+        Revoke stream permissions to the provided addresses and stream.
+        """
+        blockchain_name = permission_ns.payload[BLOCKCHAIN_NAME_FIELD_NAME]
+        addresses = permission_ns.payload[ADDRESSES_FIELD_NAME]
+        stream_name = permission_ns.payload[STREAM_NAME_FIELD_NAME]
+        permissions = permission_ns.payload[PERMISSIONS_FIELD_NAME]
 
         if not blockchain_name or not blockchain_name.strip():
             raise ValueError("The provided blockchain name can't be empty!")
-
-        if not address or not address.strip():
-            raise ValueError("The provided addresses can't be empty!")
 
         if not stream_name or not stream_name.strip():
             raise ValueError("The provided stream name can't be empty!")
 
-        if not permission or not permission.strip():
-            raise ValueError("The provided permissions can't be empty!")
-
         blockchain_name = blockchain_name.strip()
-        address = address.strip()
         stream_name = stream_name.strip()
-        permission = permission.strip()
 
         transaction_id = PermissionController.revoke_stream_permission(
-            blockchain_name, address, stream_name, permission
+            blockchain_name, addresses, stream_name, permissions
         ).decode("utf-8")
         transaction_id = transaction_id[:-1]
 
-        return jsonify({"transactionID": transaction_id}), status.HTTP_200_OK
-    except MultiChainError as ex:
-        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
-    except (ValueError, Exception) as ex:
-        return (jsonify({"error": {"message": str(ex)}}), status.HTTP_400_BAD_REQUEST)
+        return {"transactionID": transaction_id}, status.HTTP_200_OK
 
 
-"""
-Gets the permissions of the provided addresses, 
-omit permissions to view all permissions, otherwise specific permissions can be passed
-The following data is expected in the body of the request:
-    "blockchainName": blockchain name
-    "addresses": list of addresses
-    "permissions": list of permissions
-    "verbose": verbose boolean
-"""
+get_permission_parser = reqparse.RequestParser(bundle_errors=True)
+get_permission_parser.add_argument(
+    BLOCKCHAIN_NAME_FIELD_NAME, location="args", type=str, required=True
+)
+get_permission_parser.add_argument(
+    ADDRESSES_FIELD_NAME,
+    location="args",
+    action="append",
+    type=str,
+    default=PermissionController.DEFAULT_ADDRESSES_LIST_CONTENT,
+)
+get_permission_parser.add_argument(
+    PERMISSIONS_FIELD_NAME,
+    location="args",
+    action="append",
+    type=str,
+    default=PermissionController.DEFAULT_PERMISSIONS_LIST_CONTENT,
+)
+get_permission_parser.add_argument(
+    VERBOSE_FIELD_NAME,
+    location="args",
+    type=inputs.boolean,
+    default=PermissionController.DEFAULT_VERBOSE_VALUE,
+)
 
 
-@mod.route("/get_permissions", methods=["POST"])
-def get_permissions():
-    try:
-        json_request = request.get_json()
+@permission_ns.route("/get_streams")
+@permission_ns.doc(
+    params={
+        BLOCKCHAIN_NAME_FIELD_NAME: "blockchain name",
+        ADDRESSES_FIELD_NAME: "list of address",
+        PERMISSIONS_FIELD_NAME: "list of permissions",
+        VERBOSE_FIELD_NAME: "Set verbose to true for additional information about each item’s transaction",
+    }
+)
+class GetPermission(Resource):
+    @permission_ns.expect(get_permission_parser)
+    @permission_ns.doc(
+        responses={
+            status.HTTP_400_BAD_REQUEST: "BAD REQUEST",
+            status.HTTP_200_OK: "SUCCESS",
+        }
+    )
+    def get(self):
+        """
+        Gets the permissions of the provided addresses, 
+        omit permissions to view all permissions, otherwise specific permissions can be passed
+        """
 
-        if not json_request:
-            raise ValueError("The request body is empty!")
+        args = get_permission_parser.parse_args(strict=True)
 
-        if not BLOCKCHAIN_NAME_FIELD_NAME in json_request:
-            raise ValueError(
-                "The "
-                + BLOCKCHAIN_NAME_FIELD_NAME
-                + " field was not found in the request!"
-            )
-
-        if not ADDRESSES_FIELD_NAME in json_request:
-            raise ValueError(
-                "The " + ADDRESSES_FIELD_NAME + " field was not found in the request!"
-            )
-
-        if not PERMISSIONS_FIELD_NAME in json_request:
-            raise ValueError(
-                "The " + PERMISSIONS_FIELD_NAME + " field was not found in the request!"
-            )
-
-        if not VERBOSE_FIELD_NAME in json_request:
-            raise ValueError(
-                "The " + VERBOSE_FIELD_NAME + " field was not found in the request!"
-            )
-
-        blockchain_name = json_request[BLOCKCHAIN_NAME_FIELD_NAME]
-        addresses = json_request[ADDRESSES_FIELD_NAME]
-        permissions = json_request[PERMISSIONS_FIELD_NAME]
-        verbose = json_request[VERBOSE_FIELD_NAME]
-
-        if not blockchain_name or not blockchain_name.strip():
-            raise ValueError("The provided blockchain name can't be empty!")
-
-        if not addresses:
-            raise ValueError("The provided addresses can't be empty!")
-
-        if not verbose or not verbose.strip():
-            raise ValueError("The verbose option can't be empty!")
+        blockchain_name = args[BLOCKCHAIN_NAME_FIELD_NAME]
+        addresses = args[ADDRESSES_FIELD_NAME]
+        permissions = args[PERMISSIONS_FIELD_NAME]
+        verbose = args[VERBOSE_FIELD_NAME]
 
         blockchain_name = blockchain_name.strip()
-
-        if verbose == "True":
-            verbose = True
-
-        elif verbose == "False":
-            verbose = False
-
-        else:
-            raise ValueError("The verbose option must be a boolean!")
 
         output = PermissionController.get_permissions(
             blockchain_name, permissions, addresses, verbose
         )
 
-        return jsonify({"Permissions": output}), status.HTTP_200_OK
-    except MultiChainError as ex:
-        return jsonify(ex.get_info()), status.HTTP_400_BAD_REQUEST
-    except (ValueError, Exception) as ex:
-        return (jsonify({"error": {"message": str(ex)}}), status.HTTP_400_BAD_REQUEST)
+        return {"permissions": output}, status.HTTP_200_OK
 

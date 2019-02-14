@@ -21,7 +21,8 @@ Backend for Talos, a configurable platform for developing and deploying blockcha
 
 # Install MultiChain
 
-Make sure you are in the `server` directory then run the following command:<br>
+Make sure you are in the `server` directory then run the following commands:<br>
+`$ chmod +x multichain.sh`
 
 `$ sudo ./multichain.sh`
 

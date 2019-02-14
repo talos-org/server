@@ -13,7 +13,7 @@ PERMISSION_FIELD_NAME = "permission"
 STREAM_NAME_FIELD_NAME = "streamName"
 VERBOSE_FIELD_NAME = "verbose"
 
-permission_ns = Namespace("permission", description="Permission API")
+permission_ns = Namespace("permissions", description="Permissions API")
 
 
 address_permission_model = permission_ns.model(
@@ -68,15 +68,6 @@ stream_permission_model = permission_ns.clone(
     {STREAM_NAME_FIELD_NAME: fields.String(required=True, description="stream name")},
 )
 
-"""
-Grants stream permissions to the provided addresses and stream.
-The following data is expected in the body of the request:
-    "blockchainName": blockchain name
-    "address": address
-    "streamName": 
-    "permissions": permissions
-"""
-
 
 @permission_ns.route("/grant_stream_permission")
 class GrantStreamPermission(Resource):
@@ -88,6 +79,9 @@ class GrantStreamPermission(Resource):
         }
     )
     def post(self):
+        """
+        Grants stream permissions to the provided addresses and stream.
+        """
         blockchain_name = permission_ns.payload[BLOCKCHAIN_NAME_FIELD_NAME]
         addresses = permission_ns.payload[ADDRESSES_FIELD_NAME]
         stream_name = permission_ns.payload[STREAM_NAME_FIELD_NAME]

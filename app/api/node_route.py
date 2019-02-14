@@ -5,12 +5,10 @@ from app.models.exception.multichain_error import MultiChainError
 import json
 from flask_restplus import Namespace, Resource, reqparse, inputs, fields
 
-mod = Blueprint("node", __name__)
-
 NEW_NODE_ADDRESS_FIELD_NAME = "newNodeAddress"
 ADMIN_NODE_ADDRESS_FIELD_NAME = "adminNodeAddress"
 
-node_ns = Namespace("node", description="Node API")
+node_ns = Namespace("nodes", description="Nodes API")
 
 
 admin_node_model = node_ns.model(

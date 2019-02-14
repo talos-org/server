@@ -14,7 +14,7 @@ IS_OPEN_FIELD_NAME = "isOpen"
 STREAMS_FIELD_NAME = "streams"
 RESCAN_FIELD_NAME = "rescan"
 
-data_stream_ns = Namespace("data_stream", description="Data Stream API")
+data_stream_ns = Namespace("data_streams", description="Data Streams API")
 
 create_stream_model = data_stream_ns.model(
     "Create Stream",

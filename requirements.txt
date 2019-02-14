@@ -9,6 +9,7 @@ configobj==5.0.6
 Flask==1.0.2
 Flask-API==1.1
 Flask-Cors==3.0.7
+flask_restplus==0.12.1
 isort==4.3.4
 itsdangerous==1.1.0
 Jinja2==2.10

@@ -79,57 +79,6 @@ class DataController:
             raise err
 
     @staticmethod
-    def get_items_by_key(
-        blockchain_name: str,
-        stream: str,
-        key: str,
-        verbose: bool = DEFAULT_VERBOSE_VALUE,
-        count: int = DEFAULT_ITEM_COUNT_VALUE,
-        start: int = DEFAULT_ITEM_START_VALUE,
-        local_ordering: bool = DEFAULT_LOCAL_ORDERING_VALUE,
-    ):
-        """
-        Retrieves items that belong to the specified key from stream, passed as a stream name to 
-        which the node must be subscribed. Set verbose to true for additional 
-        information about the item’s transaction. If an item’s data is larger 
-        than the maxshowndata runtime parameter, it will be returned as an 
-        object whose fields can be used with gettxoutdata.
-        """
-        try:
-            blockchain_name = blockchain_name.strip()
-            stream = stream.strip()
-            key = key.strip()
-
-            if not stream:
-                raise ValueError("Stream name can't be empty")
-
-            if not key:
-                raise ValueError("key can't be empty")
-
-            if not blockchain_name:
-                raise ValueError("Blockchain name can't be empty")
-
-            args = [
-                DataController.MULTICHAIN_ARG,
-                blockchain_name,
-                DataController.GET_STREAM_KEY_ITEMS_ARG,
-                stream,
-                key,
-                json.dumps(verbose),
-                json.dumps(count),
-                json.dumps(start),
-                json.dumps(local_ordering),
-            ]
-            items = run(args, check=True, capture_output=True)
-            return json.loads(items.stdout)
-        except CalledProcessError as err:
-            raise MultiChainError(err.stderr)
-        except ValueError as err:
-            raise err
-        except Exception as err:
-            raise err
-
-    @staticmethod
     def get_items_by_keys(
         blockchain_name: str,
         stream: str,
@@ -225,65 +174,21 @@ class DataController:
             if not blockchain_name:
                 raise ValueError("Blockchain name can't be empty")
 
+            publisher_label = "publishers"
+
+            if len(publishers) == 1:
+                publisher_label = "publisher"
+                publishers = publishers[0]
+
+            print(publisher_label)
+            print(publishers)
             args = [
                 DataController.MULTICHAIN_ARG,
                 blockchain_name,
                 DataController.GET_STREAM_KEYS_ITEMS_ARG,
                 stream,
-                json.dumps({"publishers": publishers}),
+                json.dumps({publisher_label: publishers}),
                 json.dumps(verbose),
-            ]
-            items = run(args, check=True, capture_output=True)
-
-            return json.loads(items.stdout)
-        except CalledProcessError as err:
-            raise MultiChainError(err.stderr)
-        except ValueError as err:
-            raise err
-        except Exception as err:
-            raise err
-
-    @staticmethod
-    def get_items_by_publisher(
-        blockchain_name: str,
-        stream: str,
-        publisher: str,
-        verbose: bool = DEFAULT_VERBOSE_VALUE,
-        count: int = DEFAULT_ITEM_COUNT_VALUE,
-        start: int = DEFAULT_ITEM_START_VALUE,
-        local_ordering: bool = DEFAULT_LOCAL_ORDERING_VALUE,
-    ):
-        """
-        Retrieves items that belong to the specified publisher from stream, passed as a stream name to 
-        which the node must be subscribed. Set verbose to true for additional 
-        information about the item’s transaction. If an item’s data is larger 
-        than the maxshowndata runtime parameter, it will be returned as an 
-        object whose fields can be used with gettxoutdata.
-        """
-        try:
-            blockchain_name = blockchain_name.strip()
-            stream = stream.strip()
-            publisher = publisher.strip()
-
-            if not stream:
-                raise ValueError("Stream name can't be empty")
-
-            if not publisher:
-                raise ValueError("Publisher can't be empty")
-
-            if not blockchain_name:
-                raise ValueError("Blockchain name can't be empty")
-
-            args = [
-                DataController.MULTICHAIN_ARG,
-                blockchain_name,
-                DataController.GET_STREAM_PUBLISHER_ITEMS_ARG,
-                stream,
-                publisher,
-                json.dumps(verbose),
-                json.dumps(count),
-                json.dumps(start),
-                json.dumps(local_ordering),
             ]
             items = run(args, check=True, capture_output=True)
 
@@ -401,7 +306,7 @@ class DataController:
             raise err
         except Exception as err:
             raise err
-    
+
     @staticmethod
     def get_stream_keys(
         blockchain_name: str,
@@ -431,9 +336,7 @@ class DataController:
 
             keys_selector = "*"
             if keys is not None:
-                keys = [
-                    key.strip() for key in keys if key.strip()
-                ]
+                keys = [key.strip() for key in keys if key.strip()]
                 if not keys:
                     raise ValueError("Addresses can't be empty")
                 keys_selector = json.dumps(keys)

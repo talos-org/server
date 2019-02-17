@@ -20,6 +20,9 @@ class PermissionController:
         "admin",
     }
     STREAM_PERMISSIONS_LIST = {"write", "activate", "admin"}
+    DEFAULT_ADDRESSES_LIST_CONTENT = None
+    DEFAULT_PERMISSIONS_LIST_CONTENT = None
+    DEFAULT_VERBOSE_VALUE = False
 
     @staticmethod
     def grant_global_permission(
@@ -122,9 +125,9 @@ class PermissionController:
     @staticmethod
     def get_permissions(
         blockchain_name: str,
-        permissions: list = None,
-        addresses: list = None,
-        verbose: bool = False,
+        permissions: list = DEFAULT_PERMISSIONS_LIST_CONTENT,
+        addresses: list = DEFAULT_ADDRESSES_LIST_CONTENT,
+        verbose: bool = DEFAULT_VERBOSE_VALUE,
     ):
         """
         Returns a list of all permissions which have been explicitly granted to addresses. 

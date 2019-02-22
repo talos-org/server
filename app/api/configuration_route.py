@@ -169,7 +169,7 @@ class BlockchainExist(Resource):
     )
     def get(self):
         """
-        Determines wheher the blockchain exists or not
+        Determines whether the blockchain exists or not
         """
         args = blockchain_parser.parse_args(strict=True)
 

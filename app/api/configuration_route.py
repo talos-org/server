@@ -187,7 +187,7 @@ class BlockchainExist(Resource):
             
             return {"status": blockchain_status}, status.HTTP_409_CONFLICT
         else:
-            blockchain_status = "Valid blockchain name"
+            blockchain_status = "The blockchain name is available"
 
             return {"status": blockchain_status}, status.HTTP_200_OK
 

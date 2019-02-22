@@ -162,8 +162,9 @@ class BlockchainExist(Resource):
     @config_ns.expect(blockchain_parser)
     @config_ns.doc(
         responses={
-            status.HTTP_400_BAD_REQUEST: "BAD REQUEST",
             status.HTTP_200_OK: "SUCCESS",
+            status.HTTP_400_BAD_REQUEST: "BAD REQUEST",
+            status.HTTP_409_CONFLICT: "CONFLICT",
         }
     )
     def get(self):
@@ -178,14 +179,17 @@ class BlockchainExist(Resource):
             raise ValueError("The blockchain name can't be empty!")
 
         blockchain_name = blockchain_name.strip()
-        blockchain_status = "Blockchain name already exists!"
 
         existing_blockchains = cc.get_blockchains()
 
-        if blockchain_name not in existing_blockchains:
+        if blockchain_name in existing_blockchains:
+            blockchain_status = "Blockchain name already exists!"
+            
+            return {"status": blockchain_status}, status.HTTP_409_CONFLICT
+        else:
             blockchain_status = "Valid blockchain name"
 
-        return {"status": blockchain_status}, status.HTTP_200_OK
+            return {"status": blockchain_status}, status.HTTP_200_OK
 
 
 @config_ns.route("/get_blockchains")

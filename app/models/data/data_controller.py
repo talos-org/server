@@ -74,9 +74,8 @@ class DataController:
                 data = '"' + data + '"'
 
             json_data = json.loads('{"json":' + data + "}")
-            print(json_data)
             formatted_data = json.dumps(json_data)
-            print(formatted_data)
+            
             args = [
                 DataController.MULTICHAIN_ARG,
                 blockchain_name,
@@ -197,8 +196,6 @@ class DataController:
                 publisher_label = "publisher"
                 publishers = publishers[0]
 
-            print(publisher_label)
-            print(publishers)
             args = [
                 DataController.MULTICHAIN_ARG,
                 blockchain_name,

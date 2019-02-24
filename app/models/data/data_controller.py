@@ -21,7 +21,19 @@ class DataController:
     DEFAULT_KEYS_LIST_CONTENT = None
 
     @staticmethod
-    def publish_item(blockchain_name: str, stream: str, keys: list, json_data: str):
+    def __is_json(data):
+        """
+        Returns true if the data is a properly formatted JSON object,
+        otherwise false is returned
+        """
+        try:
+            json_object = json.loads(data)
+        except ValueError as e:
+            return False
+        return True
+
+    @staticmethod
+    def publish_item(blockchain_name: str, stream: str, keys: list, data: str):
         """
         Publishes an item in stream, passed as a stream name, an array of keys 
         and data in JSON format.
@@ -58,8 +70,13 @@ class DataController:
 
             # This is used to ensure that the json_data provided is a valid JSON object
             #
-            data = json.loads(json_data)
-            formatted_data = json.dumps({"json": json_data})
+            if not DataController.__is_json(data):
+                data = '"' + data + '"'
+
+            json_data = json.loads('{"json":' + data + "}")
+            print(json_data)
+            formatted_data = json.dumps(json_data)
+            print(formatted_data)
             args = [
                 DataController.MULTICHAIN_ARG,
                 blockchain_name,

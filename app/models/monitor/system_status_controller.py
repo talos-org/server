@@ -138,18 +138,3 @@ class SystemStatusController:
         except Exception as err:
             raise err
 
-    @staticmethod
-    def check_minimum_nodes(blockchain_name: str):
-
-        blockchain_name = blockchain_name.strip()
-        if not blockchain_name:
-            raise ValueError("Blockchain name can't be empty")
-
-        try:
-            peerinfo = SystemStatusController.get_peer_info(blockchain_name=blockchain_name)
-            if len(peerinfo)>=2:
-                return True
-            return False
-        except Exception as err:
-            raise err
-

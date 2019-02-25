@@ -105,8 +105,8 @@ class PublishItem(Resource):
 
         blockchain_name = blockchain_name.strip()
         stream_name = stream_name.strip()
-        json_data = json.dumps(data)
-        DataController.publish_item(blockchain_name, stream_name, keys, json_data)
+        
+        DataController.publish_item(blockchain_name, stream_name, keys, data)
         return {"status": "Data published!"}, status.HTTP_200_OK
 
 

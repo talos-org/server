@@ -10,7 +10,7 @@ class NodeController:
     GRANT_ARG = ["grant"]
 
     @staticmethod
-    def connect_to_admin_node(blockchain_name: str,admin_node_address: str):
+    def connect_to_admin_node(admin_node_address: str):
         """
         Initializes the connection between the current node and the admin
         :param admin_node_address: Node address of the admin node

@@ -149,22 +149,12 @@ class PermissionController:
                 ]
                 if not permissions:
                     raise ValueError("The list of permissions is empty")
-                if not set(permissions).issubset(
-                    PermissionController.GLOBAL_PERMISSIONS_LIST
-                ):
-                    raise ValueError(
-                        "The permission(s) proivded: "
-                        + str(permissions)
-                        + " does not exist."
-                    )
+
                 else:
                     permission_selector = ",".join(permissions)
 
             address_selector = "*"
             if addresses is not None:
-                addresses = [
-                    address.strip() for address in addresses if address.strip()
-                ]
                 if not addresses:
                     raise ValueError("The list of addresses is empty")
                 address_selector = ",".join(addresses)

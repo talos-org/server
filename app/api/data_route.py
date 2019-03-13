@@ -105,9 +105,91 @@ class PublishItem(Resource):
 
         blockchain_name = blockchain_name.strip()
         stream_name = stream_name.strip()
-        
+
         DataController.publish_item(blockchain_name, stream_name, keys, data)
         return {"status": "Data published!"}, status.HTTP_200_OK
+
+
+items_key_parser = base_parser.copy()
+items_key_parser.add_argument(
+    KEY_FIELD_NAME, type=str, location="args", required=True
+)
+
+
+@data_ns.route("/get_items_by_key")
+@data_ns.doc(
+    params={
+        BLOCKCHAIN_NAME_FIELD_NAME: "blockchain name",
+        STREAM_NAME_FIELD_NAME: "stream name",
+        KEY_FIELD_NAME: "key for the data to be retrieved",
+        VERBOSE_FIELD_NAME: "Set verbose to true for additional information about each item’s transaction",
+        COUNT_FIELD_NAME: "retrieve part of the list only ex. only 5 items",
+        START_FIELD_NAME: "deals with the ordering of the data retrieved, with negative start values (like the default) indicating the most recent items",
+        LOCAL_ORDERING_FIELD_NAME: "Set local-ordering to true to order items by when first seen by this node, rather than their order in the chain",
+    }
+)
+class ItemByKey(Resource):
+    @data_ns.expect(items_key_parser)
+    @data_ns.doc(
+        responses={
+            status.HTTP_400_BAD_REQUEST: "BAD REQUEST",
+            status.HTTP_200_OK: "SUCCESS",
+        }
+    )
+    def get(self):
+        """
+        Retrieves items that belong to the specified key from stream, passed as a stream name to which the node must be subscribed.
+        """
+        args = items_key_parser.parse_args(strict=True)
+
+        blockchain_name = args[BLOCKCHAIN_NAME_FIELD_NAME]
+        stream_name = args[STREAM_NAME_FIELD_NAME]
+        key = args[KEY_FIELD_NAME]
+        verbose = args[VERBOSE_FIELD_NAME]
+        count = args[COUNT_FIELD_NAME]
+        start = args[START_FIELD_NAME]
+        local_ordering = args[LOCAL_ORDERING_FIELD_NAME]
+
+        if blockchain_name is None:
+            raise ValueError(
+                "The "
+                + BLOCKCHAIN_NAME_FIELD_NAME
+                + " parameter was not found in the request!"
+            )
+
+        if stream_name is None:
+            raise ValueError(
+                "The "
+                + STREAM_NAME_FIELD_NAME
+                + " parameter was not found in the request!"
+            )
+
+        if key is None:
+            raise ValueError(
+                "The " + KEY_FIELD_NAME + " parameter was not found in the request!"
+            )
+
+        verbose = DataController.DEFAULT_VERBOSE_VALUE
+        count = DataController.DEFAULT_ITEM_COUNT_VALUE
+        start = DataController.DEFAULT_ITEM_START_VALUE
+        local_ordering = DataController.DEFAULT_LOCAL_ORDERING_VALUE
+
+        if not blockchain_name or not blockchain_name.strip():
+            raise ValueError("The blockchain name can't be empty!")
+
+        if not stream_name or not stream_name.strip():
+            raise ValueError("The stream name can't be empty!")
+
+        if not key or not key.strip():
+            raise ValueError("The data key can't be empty!")
+
+        blockchain_name = blockchain_name.strip()
+        stream_name = stream_name.strip()
+        key = key.strip()
+        json_data = DataController.get_items_by_key(
+            blockchain_name, stream_name, key, verbose, count, start, local_ordering
+        )
+        return json_data, status.HTTP_200_OK
 
 
 items_keys_parser = base_parser.copy()
@@ -128,7 +210,7 @@ items_keys_parser.remove_argument(COUNT_FIELD_NAME)
         VERBOSE_FIELD_NAME: "Set verbose to true for additional information about each item’s transaction",
     }
 )
-class ItemByKey(Resource):
+class ItemByKeys(Resource):
     @data_ns.expect(items_keys_parser)
     @data_ns.doc(
         responses={

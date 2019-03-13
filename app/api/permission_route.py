@@ -16,25 +16,28 @@ VERBOSE_FIELD_NAME = "verbose"
 permission_ns = Namespace("permissions", description="Permissions API")
 
 
-address_permission_model = permission_ns.model(
-    "Global Permission",
+
+permission_model = permission_ns.model(
+    "Permission",
     {
         BLOCKCHAIN_NAME_FIELD_NAME: fields.String(
             required=True, description="The blockchain name"
-        ),
-        ADDRESSES_FIELD_NAME: fields.List(
-            fields.String, required=True, description="list of addresses"
-        ),
-        PERMISSIONS_FIELD_NAME: fields.Boolean(
-            required=True, description="list of permissions"
         ),
     },
 )
 
 
+global_permission_model = permission_ns.clone(
+    "Global permission",
+    permission_model,
+    {ADDRESSES_FIELD_NAME: fields.List(fields.String, required=True, description="list of addresses")},
+    {PERMISSIONS_FIELD_NAME: fields.List(fields.String, required=True, description="list of permissions")},
+)
+
+
 @permission_ns.route("/grant_global_permission")
 class GrantGlobalPermission(Resource):
-    @permission_ns.expect(address_permission_model, validate=True)
+    @permission_ns.expect(global_permission_model, validate=True)
     @permission_ns.doc(
         responses={
             status.HTTP_400_BAD_REQUEST: "BAD REQUEST",
@@ -64,7 +67,9 @@ class GrantGlobalPermission(Resource):
 
 stream_permission_model = permission_ns.clone(
     "Stream permission",
-    address_permission_model,
+    permission_model,
+    {ADDRESS_FIELD_NAME: fields.String(required=True, description="stream name")},
+    {PERMISSION_FIELD_NAME: fields.String(required=True, description="permission name")},
     {STREAM_NAME_FIELD_NAME: fields.String(required=True, description="stream name")},
 )
 
@@ -83,9 +88,9 @@ class GrantStreamPermission(Resource):
         Grants stream permissions to the provided addresses and stream.
         """
         blockchain_name = permission_ns.payload[BLOCKCHAIN_NAME_FIELD_NAME]
-        addresses = permission_ns.payload[ADDRESSES_FIELD_NAME]
+        address = permission_ns.payload[ADDRESS_FIELD_NAME]
         stream_name = permission_ns.payload[STREAM_NAME_FIELD_NAME]
-        permissions = permission_ns.payload[PERMISSIONS_FIELD_NAME]
+        permissions = permission_ns.payload[PERMISSION_FIELD_NAME]
 
         if not blockchain_name or not blockchain_name.strip():
             raise ValueError("The provided blockchain name can't be empty!")
@@ -96,7 +101,7 @@ class GrantStreamPermission(Resource):
         blockchain_name = blockchain_name.strip()
         stream_name = stream_name.strip()
         transaction_id = PermissionController.grant_stream_permission(
-            blockchain_name, addresses, stream_name, permissions
+            blockchain_name, address, stream_name, permissions
         ).decode("utf-8")
         transaction_id = transaction_id[:-1]
         return {"transactionID": transaction_id}, status.HTTP_200_OK
@@ -104,7 +109,7 @@ class GrantStreamPermission(Resource):
 
 @permission_ns.route("/revoke_global_permission")
 class RevokeGlobalPermission(Resource):
-    @permission_ns.expect(address_permission_model, validate=True)
+    @permission_ns.expect(global_permission_model, validate=True)
     @permission_ns.doc(
         responses={
             status.HTTP_400_BAD_REQUEST: "BAD REQUEST",
@@ -146,9 +151,9 @@ class RevokeStreamPermission(Resource):
         Revoke stream permissions to the provided addresses and stream.
         """
         blockchain_name = permission_ns.payload[BLOCKCHAIN_NAME_FIELD_NAME]
-        addresses = permission_ns.payload[ADDRESSES_FIELD_NAME]
+        address = permission_ns.payload[ADDRESS_FIELD_NAME]
         stream_name = permission_ns.payload[STREAM_NAME_FIELD_NAME]
-        permissions = permission_ns.payload[PERMISSIONS_FIELD_NAME]
+        permissions = permission_ns.payload[PERMISSION_FIELD_NAME]
 
         if not blockchain_name or not blockchain_name.strip():
             raise ValueError("The provided blockchain name can't be empty!")
@@ -160,7 +165,7 @@ class RevokeStreamPermission(Resource):
         stream_name = stream_name.strip()
 
         transaction_id = PermissionController.revoke_stream_permission(
-            blockchain_name, addresses, stream_name, permissions
+            blockchain_name, address, stream_name, permissions
         ).decode("utf-8")
         transaction_id = transaction_id[:-1]
 
@@ -193,7 +198,7 @@ get_permission_parser.add_argument(
 )
 
 
-@permission_ns.route("/get_streams")
+@permission_ns.route("/get_permissions")
 @permission_ns.doc(
     params={
         BLOCKCHAIN_NAME_FIELD_NAME: "blockchain name",

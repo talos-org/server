@@ -89,9 +89,7 @@ class PermissionController:
             if not blockchain_name:
                 raise ValueError("Blockchain name can't be empty")
 
-            address = address.strip()
             stream_name = stream_name.strip()
-            permission = permission.strip()
 
             if not address:
                 raise ValueError("The address is empty")
@@ -254,7 +252,6 @@ class PermissionController:
             if not blockchain_name:
                 raise ValueError("Blockchain name can't be empty")
 
-            address = address.strip()
             stream_name = stream_name.strip()
             permission = permission.strip()
 

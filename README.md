@@ -1,4 +1,4 @@
-# server v0.0.1-alpha
+# server v0.1.0-alpha
 
 Backend for Talos, a configurable platform for developing and deploying blockchains
 

@@ -75,7 +75,7 @@ class DataController:
 
             json_data = json.loads('{"json":' + data + "}")
             formatted_data = json.dumps(json_data)
-            
+
             args = [
                 DataController.MULTICHAIN_ARG,
                 blockchain_name,
@@ -91,6 +91,55 @@ class DataController:
             raise MultiChainError(err.stderr)
         except ValueError as err:
             raise err
+        except Exception as err:
+            raise err
+
+    @staticmethod
+    def get_items_by_key(
+        blockchain_name: str,
+        stream: str,
+        key: str,
+        verbose: bool = DEFAULT_VERBOSE_VALUE,
+        count: int = DEFAULT_ITEM_COUNT_VALUE,
+        start: int = DEFAULT_ITEM_START_VALUE,
+        local_ordering: bool = DEFAULT_LOCAL_ORDERING_VALUE,
+    ):
+        """
+        Retrieves items that belong to the specified key from stream, passed as a stream name to 
+        which the node must be subscribed. Set verbose to true for additional 
+        information about the item’s transaction. If an item’s data is larger 
+        than the maxshowndata runtime parameter, it will be returned as an 
+        object whose fields can be used with gettxoutdata.
+        """
+        try:
+            blockchain_name = blockchain_name.strip()
+            stream = stream.strip()
+            key = key.strip()
+
+            if not stream:
+                raise ValueError("Stream name can't be empty")
+
+            if not key:
+                raise ValueError("key can't be empty")
+
+            if not blockchain_name:
+                raise ValueError("Blockchain name can't be empty")
+
+            args = [
+                DataController.MULTICHAIN_ARG,
+                blockchain_name,
+                DataController.GET_STREAM_KEY_ITEMS_ARG,
+                stream,
+                key,
+                json.dumps(verbose),
+                json.dumps(count),
+                json.dumps(start),
+                json.dumps(local_ordering),
+            ]
+            items = run(args, check=True, capture_output=True)
+            return json.loads(items.stdout)
+        except CalledProcessError as err:
+            raise MultiChainError(err.stderr)
         except Exception as err:
             raise err
 

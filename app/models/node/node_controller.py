@@ -1,5 +1,6 @@
 from subprocess import run, CalledProcessError
 import re
+import json
 from app.models.exception.multichain_error import MultiChainError
 
 
@@ -18,7 +19,7 @@ class NodeController:
         """
         cmd = NodeController.MULTICHAIN_D_ARG + [admin_node_address]
         try:
-            output = run(cmd, capture_output=True)
+            output = run(cmd, capture_output=True, check=True)
             return (
                 re.findall(
                     r"(?<=grant )(.*)(?= connect\\n)", str(output.stdout.strip())
@@ -30,23 +31,24 @@ class NodeController:
             raise err
 
     @staticmethod
-    def add_node(blockchain_name: str,new_node_wallet_address: str):
+    def add_node(blockchain_name: str, new_node_wallet_address: str):
         """
         Adds a node to the blockchain network with the provided wallet address of the node
         that was generated in the connection process.
         :param new_node_wallet_address:
         :return:
         """
-        cmd = (
-            NodeController.MULTICHAIN_CLI_ARG
-            +[blockchain_name]
-            + NodeController.GRANT_ARG
-            + [new_node_wallet_address]
-            + NodeController.CONNECT_ARG
-        )
         try:
-            output = run(cmd, capture_output=True)
-            return output.stdout.strip()
+            cmd = (
+                NodeController.MULTICHAIN_CLI_ARG
+                + [blockchain_name]
+                + NodeController.GRANT_ARG
+                + [new_node_wallet_address]
+                + NodeController.CONNECT_ARG
+            )
+            output = run(cmd, capture_output=True, check=True)
+            print(output.stdout)
+            return output.stdout.strip().decode("utf-8")
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)
         except Exception as err:

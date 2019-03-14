@@ -1,6 +1,5 @@
 from subprocess import run, CalledProcessError
 import re
-import json
 from app.models.exception.multichain_error import MultiChainError
 
 
@@ -47,7 +46,6 @@ class NodeController:
                 + NodeController.CONNECT_ARG
             )
             output = run(cmd, capture_output=True, check=True)
-            print(output.stdout)
             return output.stdout.strip().decode("utf-8")
         except CalledProcessError as err:
             raise MultiChainError(err.stderr)

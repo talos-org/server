@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-multichainVersion="multichain-2.0-beta-2"
+multichainVersion="multichain-2.0-beta-3"
 multichainZipped="$multichainVersion.tar.gz"
 multichainLink="https://www.multichain.com/download/$multichainZipped"
 curl -o $multichainZipped $multichainLink

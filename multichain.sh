@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+if [ $EUID != 0 ]; then
+    sudo "$0" "$@"
+    exit $?
+fi
 multichainVersion="multichain-2.0-beta-3"
 multichainZipped="$multichainVersion.tar.gz"
 multichainLink="https://www.multichain.com/download/$multichainZipped"

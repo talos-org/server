@@ -26,10 +26,13 @@ Make sure you are in the `server` directory then run the following commands:<br>
 
 `$ sudo ./multichain.sh`
 
-
-
-
-
 # Start server
 Make sure you are in the `server` directory and you are still in the virtual environment then run the following command:<br>
 `(venv) $ python3 run.py`
+
+The server should now be running and listening for requests (e.g. from the talos client) on port 5000
+
+# View Swagger API Documentation (Optional)
+Visit http://localhost:5000/api/ on your web browser
+
+This web page presents the available REST endpoints provided by the talos server and allows you to try them out

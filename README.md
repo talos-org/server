@@ -4,6 +4,8 @@ Backend for Talos, a configurable platform for developing and deploying blockcha
 
 > WARNING: Talos is still in the Alpha development phase and is intended for experimenting and learning. Talos is currently not ready for use in production environments.
 
+The Talos server works well with the [Talos client](https://github.com/talos-org/client), however the Talos server can also be used on its own or with a client of your choice.
+
 # Prerequisites
 - Python 3.7
 - pip3

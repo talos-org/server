@@ -2,6 +2,8 @@
 
 Backend for Talos, a configurable platform for developing and deploying blockchains
 
+> WARNING: Talos is still in the Alpha development phase and is intended for experimenting and learning. Talos is currently not ready for use in production environments.
+
 # Prerequisites
 - Python 3.7
 - pip3

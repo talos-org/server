@@ -1,3 +1,7 @@
+[![Total
+ 
+alerts](https://img.shields.io/lgtm/alerts/g/talos-org/server.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/talos-org/server/alerts/)
+
 # server v0.1.0-alpha
 
 Backend for Talos, a configurable platform for developing and deploying blockchains

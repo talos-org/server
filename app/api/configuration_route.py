@@ -1,9 +1,6 @@
-from flask import Flask, request, jsonify, Blueprint
 from flask_api import status
 from app.models.configuration.configuration_controller import ConfigurationController
-from app.models.exception.multichain_error import MultiChainError
-import json
-from flask_restplus import Namespace, Resource, reqparse, inputs, fields
+from flask_restplus import Namespace, Resource, reqparse, fields
 
 
 BLOCKCHAIN_NAME_FIELD_NAME = "blockchainName"
@@ -184,7 +181,7 @@ class BlockchainExist(Resource):
 
         if blockchain_name in existing_blockchains:
             blockchain_status = "Blockchain name already exists!"
-            
+
             return {"status": blockchain_status}, status.HTTP_409_CONFLICT
         else:
             blockchain_status = "The blockchain name is available"

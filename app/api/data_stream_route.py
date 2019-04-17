@@ -1,8 +1,5 @@
-from flask import Flask, request, jsonify, Blueprint
 from flask_api import status
 from app.models.data.data_stream_controller import DataStreamController
-from app.models.exception.multichain_error import MultiChainError
-import json
 from flask_restplus import Namespace, Resource, reqparse, inputs, fields
 
 VERBOSE_FIELD_NAME = "verbose"

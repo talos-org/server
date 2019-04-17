@@ -1,8 +1,5 @@
-from flask import Flask, request, jsonify, Blueprint
 from flask_api import status
 from app.models.permission.permission_controller import PermissionController
-from app.models.exception.multichain_error import MultiChainError
-import json
 from flask_restplus import Namespace, Resource, reqparse, inputs, fields
 
 BLOCKCHAIN_NAME_FIELD_NAME = "blockchainName"
@@ -16,13 +13,12 @@ VERBOSE_FIELD_NAME = "verbose"
 permission_ns = Namespace("permissions", description="Permissions API")
 
 
-
 permission_model = permission_ns.model(
     "Permission",
     {
         BLOCKCHAIN_NAME_FIELD_NAME: fields.String(
             required=True, description="The blockchain name"
-        ),
+        )
     },
 )
 
@@ -30,8 +26,16 @@ permission_model = permission_ns.model(
 global_permission_model = permission_ns.clone(
     "Global permission",
     permission_model,
-    {ADDRESSES_FIELD_NAME: fields.List(fields.String, required=True, description="list of addresses")},
-    {PERMISSIONS_FIELD_NAME: fields.List(fields.String, required=True, description="list of permissions")},
+    {
+        ADDRESSES_FIELD_NAME: fields.List(
+            fields.String, required=True, description="list of addresses"
+        )
+    },
+    {
+        PERMISSIONS_FIELD_NAME: fields.List(
+            fields.String, required=True, description="list of permissions"
+        )
+    },
 )
 
 
@@ -69,7 +73,11 @@ stream_permission_model = permission_ns.clone(
     "Stream permission",
     permission_model,
     {ADDRESS_FIELD_NAME: fields.String(required=True, description="stream name")},
-    {PERMISSION_FIELD_NAME: fields.String(required=True, description="permission name")},
+    {
+        PERMISSION_FIELD_NAME: fields.String(
+            required=True, description="permission name"
+        )
+    },
     {STREAM_NAME_FIELD_NAME: fields.String(required=True, description="stream name")},
 )
 

@@ -1,8 +1,5 @@
-from flask import Flask, request, jsonify, Blueprint
 from flask_api import status
 from app.models.data.data_controller import DataController
-from app.models.exception.multichain_error import MultiChainError
-import json
 from flask_restplus import Namespace, Resource, reqparse, inputs, fields
 
 
@@ -111,9 +108,7 @@ class PublishItem(Resource):
 
 
 items_key_parser = base_parser.copy()
-items_key_parser.add_argument(
-    KEY_FIELD_NAME, type=str, location="args", required=True
-)
+items_key_parser.add_argument(KEY_FIELD_NAME, type=str, location="args", required=True)
 
 
 @data_ns.route("/get_items_by_key")

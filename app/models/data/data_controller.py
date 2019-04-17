@@ -27,7 +27,7 @@ class DataController:
         otherwise false is returned
         """
         try:
-            json_object = json.loads(data)
+            json.loads(data)
         except ValueError as e:
             return False
         return True

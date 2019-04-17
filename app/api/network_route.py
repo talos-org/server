@@ -1,10 +1,6 @@
-from flask import Flask, request, jsonify, Blueprint
 from flask_api import status
 from app.models.monitor.network_controller import NetworkController
-from app.models.permission.permission_controller import PermissionController
-from app.models.exception.multichain_error import MultiChainError
-import json
-from flask_restplus import Namespace, Resource, reqparse, inputs, fields
+from flask_restplus import Namespace, Resource, reqparse
 
 
 BLOCKCHAIN_NAME_FIELD_NAME = "blockchainName"
@@ -19,7 +15,6 @@ blockchain_parser = reqparse.RequestParser(bundle_errors=True)
 blockchain_parser.add_argument(
     BLOCKCHAIN_NAME_FIELD_NAME, location="args", type=str, required=True
 )
-
 
 
 @network_ns.route("/get_peer_info")
@@ -46,7 +41,6 @@ class PeerInfo(Resource):
         peer_info = NetworkController.get_peer_info(blockchain_name)
 
         return peer_info, status.HTTP_200_OK
-
 
 
 @network_ns.route("/get_wallet_address")

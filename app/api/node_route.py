@@ -1,9 +1,6 @@
-from flask import Flask, request, jsonify, Blueprint
 from flask_api import status
 from app.models.node.node_controller import NodeController
-from app.models.exception.multichain_error import MultiChainError
-import json
-from flask_restplus import Namespace, Resource, reqparse, inputs, fields
+from flask_restplus import Namespace, Resource, fields
 
 NEW_NODE_ADDRESS_FIELD_NAME = "newNodeAddress"
 ADMIN_NODE_ADDRESS_FIELD_NAME = "adminNodeAddress"
@@ -53,7 +50,7 @@ new_node_model = node_ns.model(
         ),
         NEW_NODE_ADDRESS_FIELD_NAME: fields.String(
             required=True, description="New node address"
-        )
+        ),
     },
 )
 
@@ -83,7 +80,11 @@ class AddNode(Resource):
         new_node_wallet_address = new_node_address.strip()
         blockchain_name = blockchain_name.strip()
         return (
-            {"walletAddress": NodeController.add_node(blockchain_name, new_node_wallet_address)},
+            {
+                "walletAddress": NodeController.add_node(
+                    blockchain_name, new_node_wallet_address
+                )
+            },
             status.HTTP_200_OK,
         )
 
